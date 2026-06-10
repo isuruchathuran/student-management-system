@@ -1,4 +1,4 @@
 
-
+@stack('script')
 </body>
 </html>

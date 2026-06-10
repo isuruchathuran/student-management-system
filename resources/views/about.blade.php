@@ -1,44 +1,17 @@
+@extends('app')
+@push('title')
+      About Us
+@endpush
 
+@push('nav-brand')
+    Sri Lanka
+@endpush
 
-@include('component.navbar')
-
-@include('component.head')
-
-<div class="container mt-5">
-
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-
-            <div class="card shadow border-0">
-                <div class="card-body p-5">
-
-                    <div class="text-center mb-4">
-                        <h1 class="fw-bold text-primary">About Us</h1>
-                        <p class="text-muted">
-
-                            Our Student Management System is developed to make school and institute management easier. It helps manage student details, subjects, teachers, attendance, and exams in an organized way. The system saves time, reduces paperwork, and improves efficiency by keeping all records in one place.
-
-                    </div>
-
-                    <div class="row align-items-center">
-
-                        <!-- Content Section -->
-                        <div class="col-md-7 items-center">
-
-                            <button class="btn btn-primary px-4">
-                                sign in Account..
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-</div>
-
-@include('component.script')
+@section('content')
+    <h1>About - CodeXpress IT Solutions</h1>
+    <p>
+        CodeXpress IT Solutions is a modern software development and IT service company based in Sri Lanka. Founded in 2020, the company focuses on providing innovative digital solutions including web development, mobile applications, POS systems, ERP systems, and UI/UX design services.
+        The company aims to help businesses go digital by delivering smart, scalable, and user-friendly software solutions. With a strong team of developers and designers, CodeXpress also offers IT training and consulting services to support students and businesses in improving their technical skills and operations.
+        Their mission is to build high-quality, reliable, and affordable technology solutions that improve business efficiency and customer experience.
+    </p>
+@endsection
