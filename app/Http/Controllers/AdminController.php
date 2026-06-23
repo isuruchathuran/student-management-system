@@ -9,7 +9,7 @@ class AdminController extends Controller
 {
     public function home()
     {
-        return view('create_student');
+        return view('dashboard');
     }
     public function about()
     {

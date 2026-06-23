@@ -16,9 +16,9 @@ return new class extends Migration
             $table->string('reg_No')->unique();
             $table->string('Name');
             $table->string('email')->unique();
-            $table->date('password');
-            $table->integer('phone');
-            $table->double('date_of_birth');
+            $table->string('password');
+            $table->string('phone');
+            $table->date('date_of_birth');
             $table->string('address');
             $table->timestamps();
         });

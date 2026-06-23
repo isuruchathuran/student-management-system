@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+<nav class="navbar navbar-expand-lg navbar-dark @stack("colour")">
     <a class="navbar-brand" href="#">
         @stack('nav-brand')
     </a>
