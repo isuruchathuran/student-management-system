@@ -68,11 +68,19 @@
                         <td>{{$student->phone}}</td>
 
                         <td>
-                            <a href="{{ route('student.edit', $student->id) }}"
+                            <button type="button"
                                class="btn btn-primary btn-sm"
-                               onclick="openEditModal(event, this)">
+                               onclick="openEditModal(this)"
+                               data-id="{{$student->id}}"
+                               data-reg="{{$student->reg_No}}"
+                               data-name="{{$student->Name}}"
+                               data-email="{{$student->email}}"
+                               data-phone="{{$student->phone}}"
+                               data-bod="{{$student->date_of_birth}}"
+                               data-password="{{$student->password}}"
+                               data-address="{{$student->address}}">
                                 ✏
-                            </a>
+                            </button>
 
                             <a href="{{ route('student.delete', $student->id) }}"
                                class="btn btn-danger btn-sm"
@@ -89,6 +97,63 @@
         </div>
 
     </div>
+    </div>
+
+    <!-- Update Modal -->
+    <div class="modal fade" id="updateStudentModal" tabindex="-1" aria-labelledby="updateStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="updateStudentModalLabel">✏ Student Details Update</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{route('student.update')}}" method="post">
+                    @csrf
+                    <div class="modal-body">
+                        <input type="hidden" name="id" id="update_id">
+
+                        <div class="form-group mb-3">
+                            <label>Register No :</label>
+                            <input type="text" name="reg_No" id="update_reg_No" class="form-control" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Full Name :</label>
+                            <input type="text" name="name" id="update_name" class="form-control" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>E-mail :</label>
+                            <input type="email" name="email" id="update_email" class="form-control" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Phone No :</label>
+                            <input type="text" name="phone" id="update_phone" class="form-control" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Date of Birth :</label>
+                            <input type="date" name="bod" id="update_bod" class="form-control" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Password :</label>
+                            <input type="password" name="password" id="update_password" class="form-control" required>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Address :</label>
+                            <input type="text" name="address" id="update_address" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Updated Details</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
 @endsection
@@ -143,5 +208,19 @@
                 }, 500);
             });
         });
+
+        function openEditModal(btn) {
+            document.getElementById('update_id').value = btn.getAttribute('data-id');
+            document.getElementById('update_reg_No').value = btn.getAttribute('data-reg');
+            document.getElementById('update_name').value = btn.getAttribute('data-name');
+            document.getElementById('update_email').value = btn.getAttribute('data-email');
+            document.getElementById('update_phone').value = btn.getAttribute('data-phone');
+            document.getElementById('update_bod').value = btn.getAttribute('data-bod');
+            document.getElementById('update_password').value = btn.getAttribute('data-password');
+            document.getElementById('update_address').value = btn.getAttribute('data-address');
+
+            var updateModal = new bootstrap.Modal(document.getElementById('updateStudentModal'));
+            updateModal.show();
+        }
     </script>
 @endpush
