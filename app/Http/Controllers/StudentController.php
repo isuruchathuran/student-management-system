@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -19,48 +21,64 @@ class StudentController extends Controller
                 ->orWhere('email', 'LIKE', "%{$search}%")
                 ->orWhere('phone', 'LIKE', "%{$search}%")
                 ->orWhere('date_of_birth', 'LIKE', "%{$search}%");
-
         }
 
         $students = $students->get();
 
         return view('component.student_list', compact('students'));
     }
+
     public function dashboard()
     {
         return view('dashboard');
     }
 
-    public function store(Request $request){
-        try {
-            Student::query()->create([
-                'reg_No'=>$request->reg_No,
-                'Name'=>$request->name,
-                'email'=>$request->email,
-                'password'=>$request->password,
-                'phone'=>$request->phone,
-                'date_of_birth'=>$request->bod,
-                'address'=>$request->address,
-            ]);
+    /**
+     * Generate the next sequential registration number.
+     * Uses a DB transaction with lock to prevent duplicate reg numbers.
+     */
+    private function generateRegNo(): string
+    {
+        // Get the latest student by ID (highest ID = most recently created)
+        $latest = Student::query()
+            ->lockForUpdate()
+            ->orderBy('id', 'desc')
+            ->first();
 
+        if ($latest && preg_match('/STU(\d+)/', $latest->reg_No, $matches)) {
+            $nextNumber = (int) $matches[1] + 1;
+        } else {
+            $nextNumber = 1;
+        }
+
+        return 'STU' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            DB::transaction(function () use ($request) {
+                $regNo = $this->generateRegNo();
+
+                Student::query()->create([
+                    'reg_No'        => $regNo,
+                    'Name'          => $request->name,
+                    'email'         => $request->email,
+                    'password'      => $request->password,
+                    'phone'         => $request->phone,
+                    'date_of_birth' => $request->bod,
+                    'address'       => $request->address,
+                ]);
+            });
 
             return redirect()->route('student.list')
                 ->with('success', 'Student registered successfully!')
                 ->with('title', 'Registered!');
-        }
-        catch (\Exception $e) {
-            return $e;
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Registration failed: ' . $e->getMessage());
         }
     }
-
-//    public function edit($id)
-//    {
-//        $student = Student::query()
-//            ->where('id', $id)
-//            ->find();
-//
-//        return view('student_update', compact('student'));
-//    }
 
     public function edit($id)
     {
@@ -69,28 +87,26 @@ class StudentController extends Controller
         return view('student_update', compact('student'));
     }
 
-    public function update(Request $request){
+    public function update(Request $request)
+    {
         try {
-
-             Student::query()
+            Student::query()
                 ->where('id', $request->id)
-                 ->update([
-                     'reg_No'=>$request->reg_No,
-                     'Name'=>$request->name,
-                     'email'=>$request->email,
-                     'password'=>$request->password,
-                     'phone'=>$request->phone,
-                     'date_of_birth'=>$request->bod,
-                     'address'=>$request->address
-                 ]);
-
+                ->update([
+                    'Name'          => $request->name,
+                    'email'         => $request->email,
+                    'password'      => $request->password,
+                    'phone'         => $request->phone,
+                    'date_of_birth' => $request->bod,
+                    'address'       => $request->address,
+                ]);
 
             return redirect()->route('student.list')
                 ->with('success', 'Student updated successfully!')
                 ->with('title', 'Updated!');
-        }
-        catch (\Exception $e) {
-            return $e;
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Update failed: ' . $e->getMessage());
         }
     }
 
@@ -102,13 +118,25 @@ class StudentController extends Controller
                 ->delete();
 
             return redirect()->route('student.list')
-                ->with('success', 'Student deleted successfully!');
-        }
-        catch (\Exception $e) {
-            return $e;
+                ->with('success', 'Student deleted successfully!')
+                ->with('title', 'Deleted!');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Delete failed: ' . $e->getMessage());
         }
     }
 
+    /**
+     * Export all student records as a downloadable PDF.
+     */
+    public function exportPdf()
+    {
+        $students = Student::orderBy('reg_No')->get();
+        $generatedAt = now()->format('F d, Y \a\t h:i A');
 
+        $pdf = Pdf::loadView('pdf.student_pdf', compact('students', 'generatedAt'))
+            ->setPaper('a4', 'Portrait');
 
+        return $pdf->download('student-report-' . now()->format('Y-m-d') . '.pdf');
+    }
 }

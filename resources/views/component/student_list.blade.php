@@ -26,7 +26,10 @@
                 <h1 class="mt-5"> 📚 Student List</h1>
             </div>
 
-            <div class="col-6 text-end mt-5">
+            <div class="col-6 text-end mt-5 d-flex gap-2 justify-content-end">
+                <a href="{{ route('student.export.pdf') }}" class="btn btn-danger">
+                    📄 Export PDF
+                </a>
                 <a href="{{route('student.dashboard')}}" class="btn btn-success">
                     + Register Student
                 </a>
@@ -113,8 +116,11 @@
                         <input type="hidden" name="id" id="update_id">
 
                         <div class="form-group mb-3">
-                            <label>Register No :</label>
-                            <input type="text" name="reg_No" id="update_reg_No" class="form-control" required>
+                            <label> Register No :</label>
+                            <input type="text" name="reg_No" id="update_reg_No" class="form-control"
+                                   readonly
+                                   style="background-color: #e9ecef; cursor: not-allowed; font-weight: 600; color: #495057;">
+                            <small class="text-muted">Registration number is auto-generated and cannot be changed.</small>
                         </div>
 
                         <div class="form-group mb-3">

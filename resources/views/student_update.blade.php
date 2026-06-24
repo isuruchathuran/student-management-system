@@ -115,8 +115,9 @@
                                name="reg_No"
                                class="form-control"
                                value="{{$student->reg_No}}"
-                               placeholder="Enter Your Register No"
-                               required>
+                               readonly
+                               style="background-color: #e9ecef; cursor: not-allowed; font-weight: 600; color: #495057;">
+                        <small class="text-muted">⚠ Registration number is auto-generated and cannot be changed.</small>
                     </div>
 
                     <div class="form-group">

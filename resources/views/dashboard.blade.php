@@ -108,15 +108,6 @@
                     @csrf
 
                     <div class="form-group">
-                        <label>Register No :</label>
-                        <input type="text"
-                               name="reg_No"
-                               class="form-control"
-                               placeholder="Enter Your Register No"
-                               required>
-                    </div>
-
-                    <div class="form-group">
                         <label>Full Name :</label>
                         <input type="text"
                                name="name"
