@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\StudentsExport;
 use App\Models\Student;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
+    /**
+     * Display the student list with optional search filtering.
+     */
     public function index(Request $request)
     {
         $search = $request->search;
@@ -28,20 +33,29 @@ class StudentController extends Controller
         return view('component.student_list', compact('students'));
     }
 
+    /**
+     * Show the student registration / dashboard page.
+     */
     public function dashboard()
     {
-        return view('dashboard');
+        // Pre-compute the next registration number so the form can display it
+        $nextRegNo = $this->previewNextRegNo();
+
+        return view('dashboard', compact('nextRegNo'));
     }
 
     /**
      * Generate the next sequential registration number.
+     * Format: STU001, STU002, STU003 ...
      * Uses a DB transaction with lock to prevent duplicate reg numbers.
      */
-    private function generateRegNo(): string
+    /**
+     * Preview the next registration number without a transaction lock.
+     * Used only for displaying in the form before submission.
+     */
+    private function previewNextRegNo(): string
     {
-        // Get the latest student by ID (highest ID = most recently created)
         $latest = Student::query()
-            ->lockForUpdate()
             ->orderBy('id', 'desc')
             ->first();
 
@@ -54,10 +68,46 @@ class StudentController extends Controller
         return 'STU' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
 
+    private function generateRegNo(): string
+    {
+        // Get the latest student by ID (highest ID = most recently created)
+        $latest = Student::query()
+            ->lockForUpdate()
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($latest && preg_match('/STU(\d+)/', $latest->reg_No, $matches)) {
+            $nextNumber = (int) $matches[1] + 1;
+        } else {
+            // No students exist yet — start from 1
+            $nextNumber = 1;
+        }
+
+        return 'STU' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Validate and store a new student record.
+     * Registration number is auto-generated (not user-supplied).
+     */
     public function store(Request $request)
     {
+        // Validate incoming request fields
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|max:255|unique:students,email',
+            'phone'    => 'required|string|max:20',
+            'bod'      => 'required|date',
+            'password' => 'required|string|min:6',
+            'address'  => 'required|string|max:500',
+        ], [
+            'email.unique'    => 'This email address is already registered to another student.',
+            'password.min'    => 'Password must be at least 6 characters.',
+        ]);
+
         try {
             DB::transaction(function () use ($request) {
+                // Auto-generate a unique registration number inside the transaction
                 $regNo = $this->generateRegNo();
 
                 Student::query()->create([
@@ -80,6 +130,9 @@ class StudentController extends Controller
         }
     }
 
+    /**
+     * Show the edit form for a specific student.
+     */
     public function edit($id)
     {
         $student = Student::find($id);
@@ -87,8 +140,25 @@ class StudentController extends Controller
         return view('student_update', compact('student'));
     }
 
+    /**
+     * Validate and update an existing student record.
+     * Registration number cannot be changed.
+     */
     public function update(Request $request)
     {
+        // Validate — email must be unique but ignore the current student's own record
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|max:255|unique:students,email,' . $request->id,
+            'phone'    => 'required|string|max:20',
+            'bod'      => 'required|date',
+            'password' => 'required|string|min:6',
+            'address'  => 'required|string|max:500',
+        ], [
+            'email.unique'    => 'This email address is already registered to another student.',
+            'password.min'    => 'Password must be at least 6 characters.',
+        ]);
+
         try {
             Student::query()
                 ->where('id', $request->id)
@@ -110,6 +180,9 @@ class StudentController extends Controller
         }
     }
 
+    /**
+     * Delete a student record by ID.
+     */
     public function delete($id)
     {
         try {
@@ -131,12 +204,23 @@ class StudentController extends Controller
      */
     public function exportPdf()
     {
-        $students = Student::orderBy('reg_No')->get();
+        $students    = Student::orderBy('reg_No')->get();
         $generatedAt = now()->format('F d, Y \a\t h:i A');
 
         $pdf = Pdf::loadView('pdf.student_pdf', compact('students', 'generatedAt'))
             ->setPaper('a4', 'Portrait');
 
         return $pdf->download('student-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Export all student records as a downloadable Excel (.xlsx) file.
+     * Columns: Registration No, Full Name, Email, Phone No, Address, Created Date.
+     */
+    public function exportExcel()
+    {
+        $filename = 'students-report-' . now()->format('Y-m-d') . '.xlsx';
+
+        return Excel::download(new StudentsExport(), $filename);
     }
 }

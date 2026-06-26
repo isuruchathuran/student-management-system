@@ -50,12 +50,12 @@
 <body>
 
     <h2>Student Management System - Student Report</h2>
-    
+
 
     <table>
         <thead>
             <tr>
-                <th>#</th>
+                <th>Number</th>
                 <th>Reg No</th>
                 <th>Student Name</th>
                 <th>Email</th>

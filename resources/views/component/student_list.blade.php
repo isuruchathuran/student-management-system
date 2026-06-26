@@ -30,7 +30,10 @@
                 <a href="{{ route('student.export.pdf') }}" class="btn btn-danger">
                     📄 Export PDF
                 </a>
-                <a href="{{route('student.dashboard')}}" class="btn btn-success">
+                <a href="{{ route('student.export.excel') }}" class="btn btn-success">
+                    📊 Export Excel
+                </a>
+                <a href="{{route('student.dashboard')}}" class="btn btn-primary">
                     + Register Student
                 </a>
             </div>
@@ -120,7 +123,7 @@
                             <input type="text" name="reg_No" id="update_reg_No" class="form-control"
                                    readonly
                                    style="background-color: #e9ecef; cursor: not-allowed; font-weight: 600; color: #495057;">
-                            <small class="text-muted">Registration number is auto-generated and cannot be changed.</small>
+
                         </div>
 
                         <div class="form-group mb-3">

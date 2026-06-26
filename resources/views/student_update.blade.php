@@ -109,6 +109,20 @@
 
                     <input type="hidden" name="id" value="{{ $student->id }}">
 
+                    {{-- Validation error display --}}
+                    @if ($errors->any())
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>⚠ Please fix the following errors:</strong>
+                            <ul class="mb-0 mt-1">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    {{-- Registration number is read-only and cannot be changed --}}
                     <div class="form-group">
                         <label>Register No :</label>
                         <input type="text"
@@ -117,70 +131,76 @@
                                value="{{$student->reg_No}}"
                                readonly
                                style="background-color: #e9ecef; cursor: not-allowed; font-weight: 600; color: #495057;">
-                        <small class="text-muted">⚠ Registration number is auto-generated and cannot be changed.</small>
+                        <small class="text-muted">🔒 Registration number cannot be changed.</small>
                     </div>
 
                     <div class="form-group">
                         <label>Full Name :</label>
                         <input type="text"
                                name="name"
-                               value="{{$student->Name}}"
-                               class="form-control"
+                               value="{{ old('name', $student->Name) }}"
+                               class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
                                placeholder="Enter Your Full Name"
                                required>
+                        @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="form-group">
                         <label>E-mail :</label>
                         <input type="email"
                                name="email"
-                               class="form-control"
-                               value="{{$student->email}}"
+                               class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
+                               value="{{ old('email', $student->email) }}"
                                placeholder="Enter Your Email Address"
                                required>
+                        @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="form-group">
                         <label>Phone No :</label>
                         <input type="text"
                                name="phone"
-                               class="form-control"
-                               value="{{$student->phone}}"
+                               class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}"
+                               value="{{ old('phone', $student->phone) }}"
                                placeholder="Enter Your Phone Number"
                                required>
+                        @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="form-group">
                         <label>Date of Birth :</label>
                         <input type="date"
                                name="bod"
-                               class="form-control"
-                               value="{{$student->date_of_birth}}"
+                               class="form-control {{ $errors->has('bod') ? 'is-invalid' : '' }}"
+                               value="{{ old('bod', $student->date_of_birth) }}"
                                required>
+                        @error('bod')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="form-group">
                         <label>Password :</label>
                         <input type="password"
                                name="password"
-                               class="form-control"
+                               class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
                                value="{{$student->password}}"
-                               placeholder="Enter Your Password"
+                               placeholder="Enter Your Password (min 6 characters)"
                                required>
+                        @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="form-group">
                         <label>Address :</label>
                         <input type="text"
                                name="address"
-                               class="form-control"
-                               value="{{$student->address}}"
+                               class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}"
+                               value="{{ old('address', $student->address) }}"
                                placeholder="Enter Your Address"
                                required>
+                        @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <button type="submit" class="btn btn-danger mt-3 w-100">
-                        Save Updated Details
+                        ✏ Save Updated Details
                     </button>
 
                 </form>
