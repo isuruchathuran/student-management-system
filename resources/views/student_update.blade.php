@@ -131,7 +131,7 @@
                                value="{{$student->reg_No}}"
                                readonly
                                style="background-color: #e9ecef; cursor: not-allowed; font-weight: 600; color: #495057;">
-                        <small class="text-muted">🔒 Registration number cannot be changed.</small>
+                        
                     </div>
 
                     <div class="form-group">

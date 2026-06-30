@@ -7,20 +7,28 @@
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 12px;
+            font-size: 11px;
             color: #000000;
         }
 
         h2 {
             text-align: center;
             margin-bottom: 4px;
+            font-size: 15px;
         }
 
         p.meta {
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             color: #555555;
             margin-bottom: 20px;
+        }
+
+        p.filter-note {
+            text-align: center;
+            font-size: 10px;
+            color: #1a56a0;
+            margin-bottom: 14px;
         }
 
         table {
@@ -31,15 +39,15 @@
         th {
             background-color: #333333;
             color: #ffffff;
-            padding: 8px 10px;
+            padding: 7px 8px;
             text-align: left;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         td {
-            padding: 7px 10px;
+            padding: 6px 8px;
             border-bottom: 1px solid #dddddd;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         tr:nth-child(even) td {
@@ -49,17 +57,20 @@
 </head>
 <body>
 
-    <h2>Student Management System - Student Report</h2>
+    <h2>Student Management System — Student Report</h2>
+    
 
+    
 
     <table>
         <thead>
             <tr>
-                <th>Number</th>
+                <th>#</th>
                 <th>Reg No</th>
                 <th>Student Name</th>
                 <th>Email</th>
                 <th>Phone Number</th>
+                <th>Birthday</th>
                 <th>Address</th>
             </tr>
         </thead>
@@ -71,11 +82,12 @@
                     <td>{{ $student->Name }}</td>
                     <td>{{ $student->email }}</td>
                     <td>{{ $student->phone }}</td>
+                    <td>{{ $student->date_of_birth }}</td>
                     <td>{{ $student->address }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 16px; color: #777777;">
+                    <td colspan="7" style="text-align: center; padding: 16px; color: #777777;">
                         No student records found.
                     </td>
                 </tr>

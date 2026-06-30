@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\StudentsExport;
+use App\Imports\StudentsImport;
 use App\Models\Student;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -30,25 +31,22 @@ class StudentController extends Controller
 
         $students = $students->get();
 
-        return view('component.student_list', compact('students'));
+        return view('students.index', compact('students'));
     }
 
+
+
     /**
-     * Show the student registration / dashboard page.
+     * JSON endpoint — returns the next registration number preview.
+     * Used by the Register Student modal to display the auto-generated Reg No.
      */
-    public function dashboard()
+    public function nextRegNo()
     {
-        // Pre-compute the next registration number so the form can display it
-        $nextRegNo = $this->previewNextRegNo();
-
-        return view('dashboard', compact('nextRegNo'));
+        return response()->json([
+            'reg_no' => $this->previewNextRegNo(),
+        ]);
     }
 
-    /**
-     * Generate the next sequential registration number.
-     * Format: STU001, STU002, STU003 ...
-     * Uses a DB transaction with lock to prevent duplicate reg numbers.
-     */
     /**
      * Preview the next registration number without a transaction lock.
      * Used only for displaying in the form before submission.
@@ -84,6 +82,28 @@ class StudentController extends Controller
         }
 
         return 'STU' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Build a filtered student query from the request search param.
+     * Shared by index(), exportPdf(), and exportExcel().
+     */
+    private function buildFilteredQuery(Request $request)
+    {
+        $search = $request->search;
+
+        $query = Student::query();
+
+        if ($search) {
+            $query->where('reg_No', 'LIKE', "%{$search}%")
+                ->orWhere('Name', 'LIKE', "%{$search}%")
+                ->orWhere('email', 'LIKE', "%{$search}%")
+                ->orWhere('phone', 'LIKE', "%{$search}%")
+                ->orWhere('date_of_birth', 'LIKE', "%{$search}%")
+                ->orWhere('address', 'LIKE', "%{$search}%");
+        }
+
+        return $query;
     }
 
     /**
@@ -137,7 +157,7 @@ class StudentController extends Controller
     {
         $student = Student::find($id);
 
-        return view('student_update', compact('student'));
+        return view('students.edit', compact('student'));
     }
 
     /**
@@ -200,27 +220,66 @@ class StudentController extends Controller
     }
 
     /**
-     * Export all student records as a downloadable PDF.
+     * Export filtered student records as a downloadable PDF.
+     * Respects the ?search= query parameter to export only matching records.
      */
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
-        $students    = Student::orderBy('reg_No')->get();
+        $students    = $this->buildFilteredQuery($request)->orderBy('reg_No')->get();
         $generatedAt = now()->format('F d, Y \a\t h:i A');
+        $search      = $request->search;
 
-        $pdf = Pdf::loadView('pdf.student_pdf', compact('students', 'generatedAt'))
-            ->setPaper('a4', 'Portrait');
+        $pdf = Pdf::loadView('pdf.student_pdf', compact('students', 'generatedAt', 'search'))
+            ->setPaper('a4', 'landscape');
 
         return $pdf->download('student-report-' . now()->format('Y-m-d') . '.pdf');
     }
 
     /**
-     * Export all student records as a downloadable Excel (.xlsx) file.
-     * Columns: Registration No, Full Name, Email, Phone No, Address, Created Date.
+     * Export filtered student records as a downloadable Excel (.xlsx) file.
+     * Respects the ?search= query parameter to export only matching records.
+     * Columns: Registration No, Full Name, Email, Phone No, Birthday, Address.
      */
-    public function exportExcel()
+    public function exportExcel(Request $request)
     {
+        $students = $this->buildFilteredQuery($request)->orderBy('reg_No')->get();
         $filename = 'students-report-' . now()->format('Y-m-d') . '.xlsx';
 
-        return Excel::download(new StudentsExport(), $filename);
+        return Excel::download(new StudentsExport($students), $filename);
+    }
+
+    /**
+     * Handle Excel file upload and import students.
+     * Returns flash messages with import statistics.
+     */
+    public function importExcel(Request $request)
+    {
+        // Validate the uploaded file
+        $validated = $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls|max:5120',
+        ], [
+            'excel_file.required' => 'Please select an Excel file to upload.',
+            'excel_file.mimes'    => 'Only .xlsx and .xls files are allowed.',
+            'excel_file.max'      => 'File size must not exceed 5 MB.',
+        ]);
+
+        try {
+            $import = new StudentsImport();
+            Excel::import($import, $request->file('excel_file'));
+
+            return redirect()->route('student.list')
+                ->with('success', "Students imported successfully. ({$import->importedCount} records)")
+                ->with('title', 'Success!');
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            \Log::error('Excel Import Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            if (!str_contains($message, 'Import Failed')) {
+                $message = 'Import failed. Please try again. Error: ' . $message;
+            }
+            return redirect()->route('student.list')
+                ->with('error', $message)
+                ->with('error_title', 'Error!');
+        }
     }
 }

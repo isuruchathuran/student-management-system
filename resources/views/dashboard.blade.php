@@ -1,228 +1,302 @@
 @extends('app')
 
-@push('title')
-    Student Register
-@endpush
-
-@push('colour')
-    bg-success
-@endpush
-
-@push('nav-brand')
-    LMS
-@endpush
-
-@push('css')
-
-    <style>
-        body{
-            background: #f4f7fc;
-        }
-
-        h1{
-            text-align: center;
-            font-weight: 700;
-            color: #198754;
-            margin-bottom: 25px;
-        }
-
-        form{
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-
-        .form-group{
-            margin-bottom: 15px;
-        }
-
-        .form-group label{
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .form-control{
-            border-radius: 10px;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus{
-            border-color: #198754;
-            box-shadow: 0 0 10px rgba(25,135,84,0.2);
-        }
-
-        .btn-success{
-            border-radius: 10px;
-            padding: 10px;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .btn-primary{
-            width: 100%;
-            border-radius: 10px;
-            padding: 10px;
-            font-weight: 600;
-            margin-top: 10px;
-        }
-
-        .col-4{
-            padding-top: 10px;
-        }
-
-        .side-card{
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-
-        .side-card h4{
-            color: #198754;
-            margin-bottom: 15px;
-            font-weight: 700;
-        }
-    </style>
-
-@endpush
+@push('page_title', 'Dashboard')
 
 @section('content')
 
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-12">
-                <h1 class="mt-3">🎓 Student Registration Form</h1>
+<div class="fade-in-up">
+
+    {{-- ── Page Header ─────────────────────────────────────────────────── --}}
+    <div class="page-header">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <div class="breadcrumb-custom mb-1">
+                    <i class="fa-solid fa-gauge me-1"></i>
+                    Dashboard
+                </div>
+                <h1>Welcome back, Admin 👋</h1>
+                <p>Here's what's happening with your system today.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span style="font-size:0.8rem;color:var(--text-muted);">
+                    <i class="fa-regular fa-clock me-1"></i>
+                    {{ now()->format('l, d M Y') }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── Summary Stat Cards ───────────────────────────────────────────── --}}
+    <div class="row g-3 mb-4">
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fa-solid fa-user-graduate"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ number_format($totalStudents) }}</h3>
+                    <p>Total Students</p>
+                    <div class="stat-trend"><i class="fa-solid fa-arrow-trend-up me-1"></i>Registered</div>
+                </div>
             </div>
         </div>
 
-
-        <div class="row justify-content-center">
-
-            <div class="col-lg-8">
-
-                <form action="{{route('student.store')}}" method="post">
-                    @csrf
-
-                    {{-- Validation error display --}}
-                    @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <strong>⚠ Please fix the following errors:</strong>
-                            <ul class="mb-0 mt-1">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
-                    {{-- Registration Number is auto-generated on the server — shown as read-only --}}
-                    <div class="form-group">
-                        <label>Registration No :</label>
-                        <input type="text"
-                               class="form-control"
-                               value="{{ $nextRegNo }}"
-                               readonly
-                               style="background-color: #e9ecef; cursor: not-allowed; font-weight: 600; ">
-
-                    </div>
-
-                    <div class="form-group">
-                        <label>Full Name :</label>
-                        <input type="text"
-                               name="name"
-                               class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
-                               value="{{ old('name') }}"
-                               placeholder="Enter Your Full Name"
-                               required>
-                        @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label>E-mail :</label>
-                        <input type="email"
-                               name="email"
-                               class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
-                               value="{{ old('email') }}"
-                               placeholder="Enter Your Email Address"
-                               required>
-                        @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label>Phone No :</label>
-                        <input type="text"
-                               name="phone"
-                               class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}"
-                               value="{{ old('phone') }}"
-                               placeholder="Enter Your Phone Number"
-                               required>
-                        @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label>Date of Birth :</label>
-                        <input type="date"
-                               name="bod"
-                               class="form-control {{ $errors->has('bod') ? 'is-invalid' : '' }}"
-                               value="{{ old('bod') }}"
-                               required>
-                        @error('bod')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label>Password :</label>
-                        <input type="password"
-                               name="password"
-                               class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
-                               placeholder="Enter Your Password (min 6 characters)"
-                               required>
-                        @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label>Address :</label>
-                        <input type="text"
-                               name="address"
-                               class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}"
-                               value="{{ old('address') }}"
-                               placeholder="Enter Your Address"
-                               required>
-                        @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-
-                    <button type="submit" class="btn btn-success mt-3 w-100">
-                         Register Student
-                    </button>
-
-                </form>
-
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ number_format($totalTeachers) }}</h3>
+                    <p>Total Teachers</p>
+                    <div class="stat-trend"><i class="fa-solid fa-circle-check me-1"></i>Active</div>
+                </div>
             </div>
-
-            <div class="col-lg-4">
-
-                    <a href="{{route('student.list')}}"
-                       class="btn btn-primary">
-                        View Student List
-                    </a>
-
-            </div>
-
         </div>
 
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ number_format($totalSubjects) }}</h3>
+                    <p>Total Subjects</p>
+                    <div class="stat-trend"><i class="fa-solid fa-layer-group me-1"></i>Configured</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon amber">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ number_format($activeCourses) }}</h3>
+                    <p>Active Courses</p>
+                    <div class="stat-trend"><i class="fa-solid fa-bolt me-1"></i>Running</div>
+                </div>
+            </div>
+        </div>
 
     </div>
+
+    {{-- ── Row: Chart + Activities ──────────────────────────────────────── --}}
+    <div class="row g-3 mb-4">
+
+        {{-- Chart --}}
+        <div class="col-12 col-lg-8">
+            <div class="card-dark h-100">
+                <div class="card-dark-header">
+                    <h5><i class="fa-solid fa-chart-line me-2" style="color:var(--accent);"></i>Monthly Student Registrations</h5>
+                    <span class="badge-dark badge-blue">Last 6 Months</span>
+                </div>
+                <div class="card-dark-body">
+                    <canvas id="registrationsChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        {{-- Recent Activities --}}
+        <div class="col-12 col-lg-4">
+            <div class="card-dark h-100">
+                <div class="card-dark-header">
+                    <h5><i class="fa-solid fa-bolt me-2" style="color:var(--warning);"></i>Recent Activities</h5>
+                </div>
+                <div class="card-dark-body" style="padding-top:8px;">
+                    @forelse($recentActivities as $activity)
+                        <div class="activity-item">
+                            <div class="activity-dot
+                                @if($activity['color'] === 'blue') stat-icon blue
+                                @elseif($activity['color'] === 'green') stat-icon green
+                                @else stat-icon purple
+                                @endif"
+                                style="width:36px;height:36px;border-radius:10px;flex-shrink:0;">
+                                <i class="fa-solid {{ $activity['icon'] }}" style="font-size:0.8rem;"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p>{{ $activity['label'] }}</p>
+                                <strong style="font-size:0.82rem;color:var(--text-primary);">{{ $activity['name'] }}</strong><br>
+                                <small>{{ $activity['time'] ? \Carbon\Carbon::parse($activity['time'])->diffForHumans() : 'Just now' }}</small>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <i class="fa-solid fa-inbox"></i>
+                            <p>No recent activities.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- ── Row: Recent Students + Recent Teachers ───────────────────────── --}}
+    <div class="row g-3">
+
+        {{-- Recent Students --}}
+        <div class="col-12 col-lg-6">
+            <div class="card-dark">
+                <div class="card-dark-header">
+                    <h5><i class="fa-solid fa-user-graduate me-2" style="color:var(--accent);"></i>Recent Students</h5>
+                    <a href="{{ route('students.index') }}" class="btn-accent" style="padding:6px 14px;font-size:0.8rem;">
+                        View All <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="table-wrapper-dark">
+                    <table class="table-dark-custom">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Reg No</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentStudents as $student)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-circle" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);width:32px;height:32px;font-size:0.75rem;">
+                                                {{ strtoupper(substr($student->Name, 0, 1)) }}
+                                            </div>
+                                            <span>{{ $student->Name }}</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge-dark badge-blue">{{ $student->reg_No }}</span></td>
+                                    <td style="font-size:0.8rem;color:var(--text-secondary);">{{ $student->email }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3">
+                                        <div class="empty-state" style="padding:24px;">
+                                            <i class="fa-solid fa-user-graduate"></i>
+                                            <p>No students yet.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {{-- Recent Teachers --}}
+        <div class="col-12 col-lg-6">
+            <div class="card-dark">
+                <div class="card-dark-header">
+                    <h5><i class="fa-solid fa-chalkboard-user me-2" style="color:var(--success);"></i>Recent Teachers</h5>
+                    <a href="{{ route('teachers.index') }}" class="btn-accent" style="padding:6px 14px;font-size:0.8rem;">
+                        View All <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="table-wrapper-dark">
+                    <table class="table-dark-custom">
+                        <thead>
+                            <tr>
+                                <th>Teacher</th>
+                                <th>ID</th>
+                                <th>Subject</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentTeachers as $teacher)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-circle" style="background:linear-gradient(135deg,#10b981,#3b82f6);width:32px;height:32px;font-size:0.75rem;">
+                                                {{ strtoupper(substr($teacher->Teacher_Name, 0, 1)) }}
+                                            </div>
+                                            <span>{{ $teacher->Teacher_Name }}</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge-dark badge-green">{{ $teacher->teacher_id ?? 'N/A' }}</span></td>
+                                    <td style="font-size:0.8rem;color:var(--text-secondary);">{{ $teacher->subject ?? '—' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3">
+                                        <div class="empty-state" style="padding:24px;">
+                                            <i class="fa-solid fa-chalkboard-user"></i>
+                                            <p>No teachers yet.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
 
 @endsection
 
 @push('script')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('registrationsChart').getContext('2d');
 
-    <script>
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(59,130,246,0.35)');
+    gradient.addColorStop(1, 'rgba(59,130,246,0)');
 
-    </script>
-
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: @json($monthlyLabels),
+            datasets: [{
+                label: 'New Students',
+                data: @json($monthlyData),
+                borderColor: '#3b82f6',
+                backgroundColor: gradient,
+                borderWidth: 2.5,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#1e293b',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                fill: true,
+                tension: 0.4,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    borderColor: 'rgba(59,130,246,0.4)',
+                    borderWidth: 1,
+                    titleColor: '#f1f5f9',
+                    bodyColor: '#94a3b8',
+                    padding: 12,
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: { color: '#64748b', font: { family: 'Inter', size: 12 } }
+                },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: {
+                        color: '#64748b',
+                        font: { family: 'Inter', size: 12 },
+                        stepSize: 1
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
 @endpush
