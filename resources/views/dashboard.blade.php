@@ -29,54 +29,74 @@
     {{-- ── Summary Stat Cards ───────────────────────────────────────────── --}}
     <div class="row g-3 mb-4">
 
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card">
-                <div class="stat-icon blue">
+        <div class="col-12 col-sm-6 col-xl-2">
+            <div class="stat-card" style="padding:16px;">
+                <div class="stat-icon blue" style="width:40px;height:40px;font-size:1rem;">
                     <i class="fa-solid fa-user-graduate"></i>
                 </div>
                 <div class="stat-info">
-                    <h3>{{ number_format($totalStudents) }}</h3>
-                    <p>Total Students</p>
-                    <div class="stat-trend"><i class="fa-solid fa-arrow-trend-up me-1"></i>Registered</div>
+                    <h3 style="font-size:1.4rem;">{{ number_format($totalStudents) }}</h3>
+                    <p style="font-size:0.75rem;">Total Students</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card">
-                <div class="stat-icon green">
+        <div class="col-12 col-sm-6 col-xl-2">
+            <div class="stat-card" style="padding:16px;">
+                <div class="stat-icon green" style="width:40px;height:40px;font-size:1rem;">
                     <i class="fa-solid fa-chalkboard-user"></i>
                 </div>
                 <div class="stat-info">
-                    <h3>{{ number_format($totalTeachers) }}</h3>
-                    <p>Total Teachers</p>
-                    <div class="stat-trend"><i class="fa-solid fa-circle-check me-1"></i>Active</div>
+                    <h3 style="font-size:1.4rem;">{{ number_format($totalTeachers) }}</h3>
+                    <p style="font-size:0.75rem;">Total Teachers</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card">
-                <div class="stat-icon purple">
+        <div class="col-12 col-sm-6 col-xl-2">
+            <div class="stat-card" style="padding:16px;">
+                <div class="stat-icon purple" style="width:40px;height:40px;font-size:1rem;">
                     <i class="fa-solid fa-book-open"></i>
                 </div>
                 <div class="stat-info">
-                    <h3>{{ number_format($totalSubjects) }}</h3>
-                    <p>Total Subjects</p>
-                    <div class="stat-trend"><i class="fa-solid fa-layer-group me-1"></i>Configured</div>
+                    <h3 style="font-size:1.4rem;">{{ number_format($totalQuizzes) }}</h3>
+                    <p style="font-size:0.75rem;">Total Quizzes</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card">
-                <div class="stat-icon amber">
-                    <i class="fa-solid fa-graduation-cap"></i>
+        <div class="col-12 col-sm-6 col-xl-2">
+            <div class="stat-card" style="padding:16px;">
+                <div class="stat-icon amber" style="width:40px;height:40px;font-size:1rem;">
+                    <i class="fa-solid fa-clipboard-question"></i>
                 </div>
                 <div class="stat-info">
-                    <h3>{{ number_format($activeCourses) }}</h3>
-                    <p>Active Courses</p>
-                    <div class="stat-trend"><i class="fa-solid fa-bolt me-1"></i>Running</div>
+                    <h3 style="font-size:1.4rem;">{{ number_format($totalSubjects) }}</h3>
+                    <p style="font-size:0.75rem;">Total Subjects</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-2">
+            <div class="stat-card" style="padding:16px;">
+                <div class="stat-icon blue" style="width:40px;height:40px;font-size:1rem;">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 style="font-size:1.4rem;">{{ number_format($publishedQuizzes) }}</h3>
+                    <p style="font-size:0.75rem;">Published Quizzes</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-sm-6 col-xl-2">
+            <div class="stat-card" style="padding:16px;">
+                <div class="stat-icon green" style="width:40px;height:40px;font-size:1rem;">
+                    <i class="fa-solid fa-pen-nib"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 style="font-size:1.4rem;">{{ number_format($quizAttempts) }}</h3>
+                    <p style="font-size:0.75rem;">Quiz Attempts</p>
                 </div>
             </div>
         </div>
@@ -107,19 +127,28 @@
                 </div>
                 <div class="card-dark-body" style="padding-top:8px;">
                     @forelse($recentActivities as $activity)
+                        @php
+                            $icon = 'fa-user';
+                            $color = 'purple';
+                            if ($activity->user_type === 'Admin') {
+                                $icon = 'fa-shield-halved';
+                                $color = 'purple';
+                            } elseif ($activity->user_type === 'Teacher') {
+                                $icon = 'fa-chalkboard-user';
+                                $color = 'green';
+                            } elseif ($activity->user_type === 'Student') {
+                                $icon = 'fa-user-graduate';
+                                $color = 'blue';
+                            }
+                        @endphp
                         <div class="activity-item">
-                            <div class="activity-dot
-                                @if($activity['color'] === 'blue') stat-icon blue
-                                @elseif($activity['color'] === 'green') stat-icon green
-                                @else stat-icon purple
-                                @endif"
+                            <div class="activity-dot stat-icon {{ $color }}"
                                 style="width:36px;height:36px;border-radius:10px;flex-shrink:0;">
-                                <i class="fa-solid {{ $activity['icon'] }}" style="font-size:0.8rem;"></i>
+                                <i class="fa-solid {{ $icon }}" style="font-size:0.8rem;"></i>
                             </div>
                             <div class="activity-content">
-                                <p>{{ $activity['label'] }}</p>
-                                <strong style="font-size:0.82rem;color:var(--text-primary);">{{ $activity['name'] }}</strong><br>
-                                <small>{{ $activity['time'] ? \Carbon\Carbon::parse($activity['time'])->diffForHumans() : 'Just now' }}</small>
+                                <p>{{ $activity->action }}</p>
+                                <small>{{ $activity->created_at->diffForHumans() }}</small>
                             </div>
                         </div>
                     @empty
@@ -142,7 +171,7 @@
             <div class="card-dark">
                 <div class="card-dark-header">
                     <h5><i class="fa-solid fa-user-graduate me-2" style="color:var(--accent);"></i>Recent Students</h5>
-                    <a href="{{ route('students.index') }}" class="btn-accent" style="padding:6px 14px;font-size:0.8rem;">
+                    <a href="{{ route('admin.students.index') }}" class="btn-accent" style="padding:6px 14px;font-size:0.8rem;">
                         View All <i class="fa-solid fa-arrow-right ms-1"></i>
                     </a>
                 </div>
@@ -190,7 +219,7 @@
             <div class="card-dark">
                 <div class="card-dark-header">
                     <h5><i class="fa-solid fa-chalkboard-user me-2" style="color:var(--success);"></i>Recent Teachers</h5>
-                    <a href="{{ route('teachers.index') }}" class="btn-accent" style="padding:6px 14px;font-size:0.8rem;">
+                    <a href="{{ route('admin.teachers.index') }}" class="btn-accent" style="padding:6px 14px;font-size:0.8rem;">
                         View All <i class="fa-solid fa-arrow-right ms-1"></i>
                     </a>
                 </div>
@@ -215,7 +244,9 @@
                                         </div>
                                     </td>
                                     <td><span class="badge-dark badge-green">{{ $teacher->teacher_id ?? 'N/A' }}</span></td>
-                                    <td style="font-size:0.8rem;color:var(--text-secondary);">{{ $teacher->subject ?? '—' }}</td>
+                                    <td style="font-size:0.8rem;color:var(--text-secondary);">
+                                        {{ $teacher->subject ? $teacher->subject->subject_name : '—' }}
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>

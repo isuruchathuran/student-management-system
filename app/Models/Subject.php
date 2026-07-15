@@ -14,16 +14,27 @@ class Subject extends Model
         'subject_name',
         'subject_type',
         'credit_hours',
-        'teacher_id',
         'semester',
         'credits',
     ];
 
-    /**
-     * Get the teacher assigned to this subject.
-     */
     public function teacher()
     {
-        return $this->belongsTo(Teacher::class, 'teacher_id');
+        return $this->hasOne(Teacher::class, 'subject_id');
+    }
+
+    public function students()
+    {
+        return $this->belongsToMany(Student::class, 'student_subject', 'subject_id', 'student_id');
+    }
+
+    public function questions()
+    {
+        return $this->hasMany(Question::class, 'subject_id');
+    }
+
+    public function quizzes()
+    {
+        return $this->hasMany(Quiz::class, 'subject_id');
     }
 }

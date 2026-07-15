@@ -37,7 +37,6 @@ class SubjectController extends Controller
         $request->validate([
             'subject_code' => 'required|string|max:50|unique:subjects,subject_code',
             'subject_name' => 'required|string|max:255',
-            'teacher_id'   => 'nullable|exists:teachers,id',
             'credits'      => 'required|integer|min:1|max:10',
             'semester'     => 'required|string|max:50',
         ], [
@@ -45,17 +44,19 @@ class SubjectController extends Controller
         ]);
 
         try {
-            Subject::query()->create([
+            $subject = Subject::query()->create([
                 'subject_code' => strtoupper($request->subject_code),
                 'subject_name' => $request->subject_name,
                 'subject_type' => 'Core',
                 'credit_hours' => $request->credits,
-                'teacher_id'   => $request->teacher_id ?: null,
                 'semester'     => $request->semester,
                 'credits'      => $request->credits,
             ]);
+            
+            // Automatically enroll all existing students in the new subject
+            $subject->students()->sync(\App\Models\Student::pluck('id')->toArray());
 
-            return redirect()->route('subjects.index')
+            return redirect()->route('admin.subjects.index')
                 ->with('success', 'Subject added successfully!')
                 ->with('title', 'Added!');
         } catch (\Exception $e) {
@@ -72,7 +73,6 @@ class SubjectController extends Controller
         $request->validate([
             'subject_code' => 'required|string|max:50|unique:subjects,subject_code,' . $request->id,
             'subject_name' => 'required|string|max:255',
-            'teacher_id'   => 'nullable|exists:teachers,id',
             'credits'      => 'required|integer|min:1|max:10',
             'semester'     => 'required|string|max:50',
         ], [
@@ -84,12 +84,11 @@ class SubjectController extends Controller
                 'subject_code' => strtoupper($request->subject_code),
                 'subject_name' => $request->subject_name,
                 'credit_hours' => $request->credits,
-                'teacher_id'   => $request->teacher_id ?: null,
                 'semester'     => $request->semester,
                 'credits'      => $request->credits,
             ]);
 
-            return redirect()->route('subjects.index')
+            return redirect()->route('admin.subjects.index')
                 ->with('success', 'Subject updated successfully!')
                 ->with('title', 'Updated!');
         } catch (\Exception $e) {
@@ -106,12 +105,34 @@ class SubjectController extends Controller
         try {
             Subject::query()->where('id', $id)->delete();
 
-            return redirect()->route('subjects.index')
+            return redirect()->route('admin.subjects.index')
                 ->with('success', 'Subject deleted successfully!')
                 ->with('title', 'Deleted!');
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Delete failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get next subject code for Add Subject modal.
+     */
+    public function nextSubjectCode()
+    {
+        $lastSubject = Subject::query()
+            ->where('subject_code', 'like', 'SUB%')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($lastSubject) {
+            $lastCode = $lastSubject->subject_code;
+            $number = (int) substr($lastCode, 3);
+            $newNumber = str_pad($number + 1, 3, '0', STR_PAD_LEFT);
+            $newCode = 'SUB' . $newNumber;
+        } else {
+            $newCode = 'SUB001';
+        }
+
+        return response()->json(['subject_code' => $newCode]);
     }
 }

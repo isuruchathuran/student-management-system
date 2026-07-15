@@ -315,34 +315,64 @@
         .user-pill {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 5px 12px 5px 5px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
+            gap: 12px;
+            padding: 6px 16px 6px 6px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
-        .user-pill:hover { border-color: var(--border-accent); background: var(--accent-light); }
+        .user-pill:hover { 
+            border-color: rgba(139, 92, 246, 0.4); 
+            background: rgba(30, 41, 59, 0.9);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
+        }
+
+        /* Hide the default Bootstrap dropdown caret */
+        .user-pill::after { display: none !important; }
+
+        .user-pill .dropdown-icon {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            transition: transform 0.3s ease;
+        }
+
+        .user-pill[aria-expanded="true"] .dropdown-icon {
+            transform: rotate(180deg);
+        }
 
         .user-avatar {
-            width: 32px; height: 32px;
+            width: 38px; height: 38px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--purple));
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #d946ef);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 1rem;
             color: white;
             font-weight: 700;
+            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.2), 0 2px 10px rgba(99, 102, 241, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.15);
         }
 
         .user-pill .user-name {
-            font-size: 0.82rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            color: var(--text-primary);
+            color: #f8fafc;
+            letter-spacing: 0.3px;
+        }
+        
+        .user-pill .user-name small {
+            font-weight: 400;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            margin-left: 4px;
         }
 
         /* ─── MAIN CONTENT ───────────────────────────────── */
@@ -785,11 +815,52 @@
         }
 
         /* ─── SECTION SEPARATOR ──────────────────────────── */
-        .section-sep {
-            height: 1px;
-            background: var(--border);
-            margin: 24px 0;
+        /* ─── DATATABLES DARK MODE OVERRIDES ─────────────────── */
+        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+            color: var(--text-secondary) !important;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            margin-top: 12px;
         }
+        
+        .dataTables_wrapper .dataTables_filter input, .dataTables_wrapper .dataTables_length select {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 6px;
+            padding: 4px 8px;
+            outline: none;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--border-accent);
+        }
+        
+        table.dataTable.table-dark-custom {
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .page-item.disabled .page-link {
+            background-color: transparent;
+            border-color: var(--border);
+            color: var(--text-muted);
+        }
+        
+        .page-item .page-link {
+            background-color: var(--bg-tertiary);
+            border-color: var(--border);
+            color: var(--text-secondary);
+        }
+        
+        .page-item.active .page-link {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+        
+        /* Hide existing custom search if DataTable is active */
+        .dt-active .search-input-wrapper { display: none !important; }
+
     </style>
 
     @stack('css')
@@ -810,8 +881,17 @@
     @yield('content')
 </main>
 
+{{-- ─── jQuery (Required for DataTables) ─────────────────────────────────── --}}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 {{-- ─── Bootstrap 5 JS ─────────────────────────────────────────────────────── --}}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{{-- ─── DataTables JS & CSS ────────────────────────────────────────────────── --}}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
 {{-- SweetAlert2 --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -835,6 +915,29 @@
                 link.classList.add('active');
             }
         });
+        
+        // ─── Global SweetAlert handler ──────────────────────────────────────────
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: '{!! session("title", "Success!") !!}',
+                text: '{!! session("success") !!}',
+                timer: {{ session()->has('timer') ? session('timer') : 3000 }},
+                showConfirmButton: {{ session('showConfirmButton', false) ? 'true' : 'false' }},
+                confirmButtonText: '{{ session("confirmButtonText", "OK") }}'
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: '{!! session("title", "Error!") !!}',
+                text: '{!! session("error") !!}',
+                timer: {{ session()->has('timer') ? session('timer') : 4000 }},
+                showConfirmButton: {{ session('showConfirmButton', false) ? 'true' : 'false' }},
+                confirmButtonText: '{{ session("confirmButtonText", "OK") }}'
+            });
+        @endif
     });
 </script>
 

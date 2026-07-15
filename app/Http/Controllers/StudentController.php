@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\StudentsExport;
 use App\Imports\StudentsImport;
 use App\Models\Student;
+use App\Models\Subject;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ class StudentController extends Controller
     {
         $search = $request->search;
 
-        $students = Student::query();
+        $students = Student::with('subjects');
 
         if ($search) {
             $students->where('reg_No', 'LIKE', "%{$search}%")
@@ -30,8 +31,9 @@ class StudentController extends Controller
         }
 
         $students = $students->get();
+        $subjects = Subject::all();
 
-        return view('students.index', compact('students'));
+        return view('students.index', compact('students', 'subjects'));
     }
 
 
@@ -112,9 +114,10 @@ class StudentController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate incoming request fields
+        // Validate incoming request fields (no subject limitation)
         $request->validate([
             'name'     => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:students,username',
             'email'    => 'required|email|max:255|unique:students,email',
             'phone'    => 'required|string|max:20',
             'bod'      => 'required|date',
@@ -122,6 +125,7 @@ class StudentController extends Controller
             'address'  => 'required|string|max:500',
         ], [
             'email.unique'    => 'This email address is already registered to another student.',
+            'username.unique' => 'This username is already taken.',
             'password.min'    => 'Password must be at least 6 characters.',
         ]);
 
@@ -130,18 +134,28 @@ class StudentController extends Controller
                 // Auto-generate a unique registration number inside the transaction
                 $regNo = $this->generateRegNo();
 
-                Student::query()->create([
+                $student = Student::create([
                     'reg_No'        => $regNo,
                     'Name'          => $request->name,
+                    'username'      => $request->username,
                     'email'         => $request->email,
-                    'password'      => $request->password,
+                    'password'      => \Illuminate\Support\Facades\Hash::make($request->password),
                     'phone'         => $request->phone,
                     'date_of_birth' => $request->bod,
                     'address'       => $request->address,
                 ]);
+                
+                // Automatically enroll the student in ALL available subjects
+                $student->subjects()->sync(Subject::pluck('id')->toArray());
+
+                \App\Models\ActivityLog::create([
+                    'user_type' => 'Admin',
+                    'user_id' => auth()->guard('admin')->id(),
+                    'action' => "Added new student: {$student->Name} ({$regNo})",
+                ]);
             });
 
-            return redirect()->route('student.list')
+            return redirect()->route('admin.students.index')
                 ->with('success', 'Student registered successfully!')
                 ->with('title', 'Registered!');
         } catch (\Exception $e) {
@@ -155,9 +169,49 @@ class StudentController extends Controller
      */
     public function edit($id)
     {
-        $student = Student::find($id);
+        $student = Student::with('subjects')->find($id);
+        $subjects = Subject::all();
 
-        return view('students.edit', compact('student'));
+        return view('students.edit', compact('student', 'subjects'));
+    }
+
+    /**
+     * Fetch student details and statistics for the profile modal.
+     */
+    public function show($id)
+    {
+        $student = Student::with('subjects')->findOrFail($id);
+        
+        $attempts = \App\Models\QuizAttempt::where('student_id', $id);
+        
+        $totalAttempts = $attempts->count();
+        $completedAttempts = (clone $attempts)->where('status', 'completed')->count();
+        $avgMarks = (clone $attempts)->where('status', 'completed')->avg('percentage') ?? 0;
+        
+        $latestResults = \App\Models\QuizAttempt::with(['quiz.subject'])
+            ->where('student_id', $id)
+            ->where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get()
+            ->map(function($attempt) {
+                return [
+                    'quiz_title' => $attempt->quiz->title,
+                    'subject' => $attempt->quiz->subject->subject_name ?? 'Unknown',
+                    'percentage' => $attempt->percentage,
+                    'date' => $attempt->created_at->format('M d, Y')
+                ];
+            });
+
+        return response()->json([
+            'student' => $student,
+            'stats' => [
+                'total_attempts' => $totalAttempts,
+                'completed_quizzes' => $completedAttempts,
+                'average_marks' => round($avgMarks, 1)
+            ],
+            'latest_results' => $latestResults
+        ]);
     }
 
     /**
@@ -169,29 +223,44 @@ class StudentController extends Controller
         // Validate — email must be unique but ignore the current student's own record
         $request->validate([
             'name'     => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:students,username,' . $request->id,
             'email'    => 'required|email|max:255|unique:students,email,' . $request->id,
             'phone'    => 'required|string|max:20',
             'bod'      => 'required|date',
-            'password' => 'required|string|min:6',
+            'password' => 'nullable|string|min:6',
             'address'  => 'required|string|max:500',
         ], [
             'email.unique'    => 'This email address is already registered to another student.',
+            'username.unique' => 'This username is already taken.',
             'password.min'    => 'Password must be at least 6 characters.',
         ]);
 
         try {
-            Student::query()
-                ->where('id', $request->id)
-                ->update([
+            DB::transaction(function () use ($request) {
+                $student = Student::findOrFail($request->id);
+                $data = [
                     'Name'          => $request->name,
+                    'username'      => $request->username,
                     'email'         => $request->email,
-                    'password'      => $request->password,
                     'phone'         => $request->phone,
                     'date_of_birth' => $request->bod,
                     'address'       => $request->address,
-                ]);
+                ];
 
-            return redirect()->route('student.list')
+                if (!empty($request->password)) {
+                    $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+                }
+
+                $student->update($data);
+
+                \App\Models\ActivityLog::create([
+                    'user_type' => 'Admin',
+                    'user_id' => auth()->guard('admin')->id(),
+                    'action' => "Updated student: {$student->Name}",
+                ]);
+            });
+
+            return redirect()->route('admin.students.index')
                 ->with('success', 'Student updated successfully!')
                 ->with('title', 'Updated!');
         } catch (\Exception $e) {
@@ -206,11 +275,19 @@ class StudentController extends Controller
     public function delete($id)
     {
         try {
-            Student::query()
+            $student = Student::query()
                 ->where('id', $id)
-                ->delete();
+                ->firstOrFail();
+            $name = $student->Name;
+            $student->delete();
 
-            return redirect()->route('student.list')
+            \App\Models\ActivityLog::create([
+                'user_type' => 'Admin',
+                'user_id' => auth()->guard('admin')->id(),
+                'action' => "Deleted student: {$name}",
+            ]);
+
+            return redirect()->route('admin.students.index')
                 ->with('success', 'Student deleted successfully!')
                 ->with('title', 'Deleted!');
         } catch (\Exception $e) {
@@ -267,7 +344,7 @@ class StudentController extends Controller
             $import = new StudentsImport();
             Excel::import($import, $request->file('excel_file'));
 
-            return redirect()->route('student.list')
+            return redirect()->route('admin.students.index')
                 ->with('success', "Students imported successfully. ({$import->importedCount} records)")
                 ->with('title', 'Success!');
 
@@ -277,7 +354,7 @@ class StudentController extends Controller
             if (!str_contains($message, 'Import Failed')) {
                 $message = 'Import failed. Please try again. Error: ' . $message;
             }
-            return redirect()->route('student.list')
+            return redirect()->route('admin.students.index')
                 ->with('error', $message)
                 ->with('error_title', 'Error!');
         }

@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Teacher;
+use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use App\Models\ActivityLog;
 
 class TeacherController extends Controller
 {
@@ -22,13 +25,20 @@ class TeacherController extends Controller
                 ->orWhere('Teacher_Name', 'LIKE', "%{$search}%")
                 ->orWhere('email', 'LIKE', "%{$search}%")
                 ->orWhere('mobile_no', 'LIKE', "%{$search}%")
-                ->orWhere('subject', 'LIKE', "%{$search}%")
+                ->orWhereHas('subject', function ($q) use ($search) {
+                    $q->where('subject_name', 'LIKE', "%{$search}%");
+                })
                 ->orWhere('qualification', 'LIKE', "%{$search}%");
         }
 
-        $teachers = $teachers->orderBy('id', 'desc')->get();
+        $teachers = $teachers->with('subject')->orderBy('id', 'desc')->get();
+        
+        // Only show subjects that are not assigned to any teacher
+        $availableSubjects = Subject::whereDoesntHave('teacher')->get();
+        // The view also needs all subjects to correctly populate the select when editing
+        $allSubjects = Subject::all();
 
-        return view('teachers.index', compact('teachers'));
+        return view('teachers.index', compact('teachers', 'availableSubjects', 'allSubjects'));
     }
 
     /**
@@ -41,27 +51,28 @@ class TeacherController extends Controller
             'email'         => 'required|email|max:255|unique:teachers,email',
             'password'      => 'required|string|min:6',
             'mobile_no'     => 'required|string|max:20',
-            'subject'       => 'required|string|max:255',
+            'subject_id'    => 'required|exists:subjects,id|unique:teachers,subject_id',
             'qualification' => 'required|string|max:255',
             'address'       => 'required|string|max:500',
         ], [
-            'email.unique'   => 'This email address is already registered to another teacher.',
-            'password.min'   => 'Password must be at least 6 characters.',
+            'email.unique'       => 'This email address is already registered to another teacher.',
+            'subject_id.unique'  => 'This subject is already assigned to another teacher.',
+            'password.min'       => 'Password must be at least 6 characters.',
         ]);
 
         try {
             DB::transaction(function () use ($request) {
                 $teacherId = $this->generateTeacherId();
 
-                Teacher::query()->create([
+                $teacher = Teacher::create([
                     'teacher_id'    => $teacherId,
                     'Teacher_Name'  => $request->name,
                     'email'         => $request->email,
-                    'password'      => $request->password,
+                    'password'      => Hash::make($request->password),
                     'mobile_no'     => $request->mobile_no,
-                    'subject'       => $request->subject,
                     'qualification' => $request->qualification,
                     'address'       => $request->address,
+                    'subject_id'    => $request->subject_id,
                     // Legacy fields with defaults
                     'gender'        => 'N/A',
                     'dob'           => now()->format('Y-m-d'),
@@ -69,9 +80,15 @@ class TeacherController extends Controller
                     'salary'        => 0,
                     'join_date'     => now()->format('Y-m-d'),
                 ]);
+
+                ActivityLog::create([
+                    'user_type' => 'Admin',
+                    'user_id' => auth()->guard('admin')->id(),
+                    'action' => "Added new teacher: {$teacher->Teacher_Name} ({$teacherId})",
+                ]);
             });
 
-            return redirect()->route('teachers.index')
+            return redirect()->route('admin.teachers.index')
                 ->with('success', 'Teacher added successfully!')
                 ->with('title', 'Added!');
         } catch (\Exception $e) {
@@ -86,30 +103,47 @@ class TeacherController extends Controller
     public function update(Request $request)
     {
         $request->validate([
+            'id'            => 'required|exists:teachers,id',
             'name'          => 'required|string|max:255',
             'email'         => 'required|email|max:255|unique:teachers,email,' . $request->id,
-            'password'      => 'required|string|min:6',
+            'password'      => 'nullable|string|min:6',
             'mobile_no'     => 'required|string|max:20',
-            'subject'       => 'required|string|max:255',
+            'subject_id'    => 'required|exists:subjects,id|unique:teachers,subject_id,' . $request->id,
             'qualification' => 'required|string|max:255',
             'address'       => 'required|string|max:500',
         ], [
-            'email.unique'  => 'This email address is already registered to another teacher.',
-            'password.min'  => 'Password must be at least 6 characters.',
+            'email.unique'       => 'This email address is already registered to another teacher.',
+            'subject_id.unique'  => 'This subject is already assigned to another teacher.',
+            'password.min'       => 'Password must be at least 6 characters.',
         ]);
 
         try {
-            Teacher::query()->where('id', $request->id)->update([
-                'Teacher_Name'  => $request->name,
-                'email'         => $request->email,
-                'password'      => $request->password,
-                'mobile_no'     => $request->mobile_no,
-                'subject'       => $request->subject,
-                'qualification' => $request->qualification,
-                'address'       => $request->address,
-            ]);
+            DB::transaction(function () use ($request) {
+                $teacher = Teacher::findOrFail($request->id);
+                
+                $data = [
+                    'Teacher_Name'  => $request->name,
+                    'email'         => $request->email,
+                    'mobile_no'     => $request->mobile_no,
+                    'qualification' => $request->qualification,
+                    'address'       => $request->address,
+                    'subject_id'    => $request->subject_id,
+                ];
 
-            return redirect()->route('teachers.index')
+                if (!empty($request->password)) {
+                    $data['password'] = Hash::make($request->password);
+                }
+
+                $teacher->update($data);
+
+                ActivityLog::create([
+                    'user_type' => 'Admin',
+                    'user_id' => auth()->guard('admin')->id(),
+                    'action' => "Updated teacher: {$teacher->Teacher_Name}",
+                ]);
+            });
+
+            return redirect()->route('admin.teachers.index')
                 ->with('success', 'Teacher updated successfully!')
                 ->with('title', 'Updated!');
         } catch (\Exception $e) {
@@ -124,9 +158,17 @@ class TeacherController extends Controller
     public function delete($id)
     {
         try {
-            Teacher::query()->where('id', $id)->delete();
+            $teacher = Teacher::findOrFail($id);
+            $name = $teacher->Teacher_Name;
+            $teacher->delete();
 
-            return redirect()->route('teachers.index')
+            ActivityLog::create([
+                'user_type' => 'Admin',
+                'user_id' => auth()->guard('admin')->id(),
+                'action' => "Deleted teacher: {$name}",
+            ]);
+
+            return redirect()->route('admin.teachers.index')
                 ->with('success', 'Teacher deleted successfully!')
                 ->with('title', 'Deleted!');
         } catch (\Exception $e) {

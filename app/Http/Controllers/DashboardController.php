@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
+use App\Models\Question;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
+use App\Models\Result;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -17,7 +21,11 @@ class DashboardController extends Controller
         $totalStudents = Student::count();
         $totalTeachers = Teacher::count();
         $totalSubjects = Subject::count();
-        $activeCourses = Subject::count(); // Using subjects as active courses
+        $totalQuestions = Question::count();
+        $totalQuizzes = Quiz::count();
+        $publishedQuizzes = Quiz::where('status', 'Published')->count();
+        $quizAttempts = QuizAttempt::count();
+        $activeCourses = Subject::count();
 
         // Recent 5 students
         $recentStudents = Student::orderBy('created_at', 'desc')->take(5)->get();
@@ -36,37 +44,17 @@ class DashboardController extends Controller
                 ->count();
         }
 
-        // Recent activities (last 6 students + teachers combined)
-        $recentActivities = collect();
-
-        Student::orderBy('created_at', 'desc')->take(4)->get()->each(function ($s) use (&$recentActivities) {
-            $recentActivities->push([
-                'type'  => 'student',
-                'name'  => $s->Name,
-                'label' => 'New student registered',
-                'time'  => $s->created_at,
-                'icon'  => 'fa-user-graduate',
-                'color' => 'blue',
-            ]);
-        });
-
-        Teacher::orderBy('created_at', 'desc')->take(3)->get()->each(function ($t) use (&$recentActivities) {
-            $recentActivities->push([
-                'type'  => 'teacher',
-                'name'  => $t->Teacher_Name,
-                'label' => 'New teacher added',
-                'time'  => $t->created_at,
-                'icon'  => 'fa-chalkboard-user',
-                'color' => 'green',
-            ]);
-        });
-
-        $recentActivities = $recentActivities->sortByDesc('time')->take(6)->values();
+        // Recent activities from ActivityLog
+        $recentActivities = \App\Models\ActivityLog::orderBy('created_at', 'desc')->take(6)->get();
 
         return view('dashboard', compact(
             'totalStudents',
             'totalTeachers',
             'totalSubjects',
+            'totalQuestions',
+            'totalQuizzes',
+            'publishedQuizzes',
+            'quizAttempts',
             'activeCourses',
             'recentStudents',
             'recentTeachers',

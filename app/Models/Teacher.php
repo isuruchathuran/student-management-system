@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class Teacher extends Model
+class Teacher extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'teacher_id',
@@ -15,7 +16,6 @@ class Teacher extends Model
         'email',
         'password',
         'mobile_no',
-        'subject',
         'qualification',
         'address',
         'gender',
@@ -23,5 +23,25 @@ class Teacher extends Model
         'age',
         'salary',
         'join_date',
+        'subject_id',
     ];
+
+    protected $hidden = [
+        'password',
+    ];
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class, 'subject_id');
+    }
+
+    public function questions()
+    {
+        return $this->hasMany(Question::class, 'teacher_id');
+    }
+
+    public function quizzes()
+    {
+        return $this->hasMany(Quiz::class, 'teacher_id');
+    }
 }

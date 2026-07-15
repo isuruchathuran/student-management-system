@@ -8,7 +8,7 @@
     {{-- ── Page Header ─────────────────────────────────────────────────── --}}
     <div class="page-header">
         <div class="breadcrumb-custom mb-1">
-            <a href="{{ route('dashboard') }}">Dashboard</a>
+            <a href="{{ route('admin.dashboard') }}">Dashboard</a>
             <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i>
             Teachers
         </div>
@@ -70,7 +70,13 @@
                         </td>
                         <td style="color:var(--text-secondary);font-size:0.85rem;">{{ $teacher->email }}</td>
                         <td>{{ $teacher->mobile_no }}</td>
-                        <td><span class="badge-dark badge-purple">{{ $teacher->subject ?? '—' }}</span></td>
+                        <td>
+                            @if($teacher->subject)
+                                <span class="badge-dark badge-purple mb-1 d-inline-block">{{ $teacher->subject->subject_name }}</span>
+                            @else
+                                —
+                            @endif
+                        </td>
                         <td>{{ $teacher->qualification ?? '—' }}</td>
                         <td class="cell-truncate" title="{{ $teacher->address }}">{{ $teacher->address }}</td>
                         <td style="text-align:center;">
@@ -84,13 +90,13 @@
                                         data-name="{{ $teacher->Teacher_Name }}"
                                         data-email="{{ $teacher->email }}"
                                         data-phone="{{ $teacher->mobile_no }}"
-                                        data-subject="{{ $teacher->subject }}"
+                                        data-subject-id="{{ $teacher->subject_id }}"
                                         data-qualification="{{ $teacher->qualification }}"
                                         data-password="{{ $teacher->password }}"
                                         data-address="{{ $teacher->address }}">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <a href="{{ route('teachers.delete', $teacher->id) }}"
+                                <a href="{{ route('admin.teachers.delete', $teacher->id) }}"
                                    class="btn-icon del"
                                    title="Delete Teacher"
                                    onclick="return confirmDelete(this)">
@@ -129,7 +135,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('teachers.store') }}" method="post" id="addTeacherForm">
+            <form action="{{ route('admin.teachers.store') }}" method="post" id="addTeacherForm">
                 @csrf
                 <div class="modal-body form-dark">
 
@@ -179,10 +185,15 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Subject <span class="text-danger">*</span></label>
-                            <input type="text" name="subject" id="add_subject"
-                                   class="form-control {{ $errors->has('subject') ? 'is-invalid' : '' }}"
-                                   value="{{ old('subject') }}" placeholder="e.g. Mathematics" required>
-                            @error('subject')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <select name="subject_id" id="add_subject_id" class="form-select {{ $errors->has('subject_id') ? 'is-invalid' : '' }}" required>
+                                <option value="">-- Select Subject --</option>
+                                @foreach($availableSubjects as $subject)
+                                    <option value="{{ $subject->id }}">
+                                        {{ $subject->subject_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('subject_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Qualification <span class="text-danger">*</span></label>
@@ -226,7 +237,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('teachers.update') }}" method="post">
+            <form action="{{ route('admin.teachers.update') }}" method="post">
                 @csrf
                 <div class="modal-body form-dark">
                     <input type="hidden" name="id" id="edit_id">
@@ -253,7 +264,14 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Subject <span class="text-danger">*</span></label>
-                            <input type="text" name="subject" id="edit_subject" class="form-control" required>
+                            <select name="subject_id" id="edit_subject_id" class="form-select" required>
+                                <option value="">-- Select Subject --</option>
+                                @foreach($allSubjects as $subject)
+                                    <option value="{{ $subject->id }}" data-assigned="{{ $subject->teacher ? $subject->teacher->id : '' }}">
+                                        {{ $subject->subject_name }} {{ $subject->teacher ? '(Assigned)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Qualification <span class="text-danger">*</span></label>
@@ -337,23 +355,47 @@
     // Load next Teacher ID on modal open
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('addTeacherModal').addEventListener('show.bs.modal', function () {
-            fetch('{{ route("teachers.next-teacher-id") }}')
+            fetch('{{ route("admin.teachers.next-teacher-id") }}')
                 .then(r => r.json())
                 .then(d => { document.getElementById('add_teacher_id_display').value = d.teacher_id; })
                 .catch(() => { document.getElementById('add_teacher_id_display').value = 'TCH???'; });
         });
     });
 
-    // Live search
+    // Live search - Replaced by DataTables
+    // document.addEventListener('DOMContentLoaded', function () {
+    //     let delay;
+    //     document.getElementById('searchInput').addEventListener('keyup', function () {
+    //         clearTimeout(delay);
+    //         const val = this.value;
+    //         delay = setTimeout(() => {
+    //             window.location.href = '{{ route("admin.teachers.index") }}?search=' + encodeURIComponent(val);
+    //         }, 500);
+    //     });
+    // });
+
+    // DataTables Initialization
     document.addEventListener('DOMContentLoaded', function () {
-        let delay;
-        document.getElementById('searchInput').addEventListener('keyup', function () {
-            clearTimeout(delay);
-            const val = this.value;
-            delay = setTimeout(() => {
-                window.location.href = '{{ route("teachers.index") }}?search=' + encodeURIComponent(val);
-            }, 500);
+        const table = $('.table-dark-custom').DataTable({
+            "pageLength": 10,
+            "lengthMenu": [5, 10, 25, 50, 100],
+            "language": {
+                "search": "",
+                "searchPlaceholder": "Search teachers...",
+                "lengthMenu": "Show _MENU_ records",
+                "info": "Showing _START_ to _END_ of _TOTAL_ teachers",
+                "infoEmpty": "No records available"
+            },
+            "order": [], // disable initial sort
+            "columnDefs": [
+                { "orderable": false, "targets": -1 } // Disable sorting on Actions column
+            ],
+            "dom": "<'row mb-3'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                   "<'row'<'col-sm-12'tr>>" +
+                   "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
         });
+        
+        $('.card-dark-header').addClass('dt-active');
     });
 
     function openEditTeacherModal(btn) {
@@ -362,7 +404,23 @@
         document.getElementById('edit_name').value         = btn.getAttribute('data-name');
         document.getElementById('edit_email').value        = btn.getAttribute('data-email');
         document.getElementById('edit_phone').value        = btn.getAttribute('data-phone');
-        document.getElementById('edit_subject').value      = btn.getAttribute('data-subject');
+        
+        const teacherId = btn.getAttribute('data-id');
+        const subjectId = btn.getAttribute('data-subject-id');
+        const options = document.getElementById('edit_subject_id').options;
+        for (let i = 0; i < options.length; i++) {
+            const opt = options[i];
+            if (opt.value) {
+                const assigned = opt.getAttribute('data-assigned');
+                if (assigned && assigned != teacherId) {
+                    opt.disabled = true;
+                } else {
+                    opt.disabled = false;
+                }
+            }
+        }
+        document.getElementById('edit_subject_id').value = subjectId;
+
         document.getElementById('edit_qualification').value = btn.getAttribute('data-qualification');
         document.getElementById('edit_password').value     = btn.getAttribute('data-password');
         document.getElementById('edit_address').value      = btn.getAttribute('data-address');

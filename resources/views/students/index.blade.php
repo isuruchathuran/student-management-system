@@ -14,7 +14,7 @@
     {{-- ── Page Header ─────────────────────────────────────────────────── --}}
     <div class="page-header">
         <div class="breadcrumb-custom mb-1">
-            <a href="{{ route('dashboard') }}">Dashboard</a>
+            <a href="{{ route('admin.dashboard') }}">Dashboard</a>
             <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i>
             Students
         </div>
@@ -24,11 +24,11 @@
                 <p>Manage all registered students</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ route('students.export.pdf') }}{{ request('search') ? '?search='.urlencode(request('search')) : '' }}"
+                <a href="{{ route('admin.students.export.pdf') }}{{ request('search') ? '?search='.urlencode(request('search')) : '' }}"
                    class="btn-accent" style="background:#ef4444;">
                     <i class="fa-solid fa-file-pdf"></i> Export PDF
                 </a>
-                <a href="{{ route('students.export.excel') }}{{ request('search') ? '?search='.urlencode(request('search')) : '' }}"
+                <a href="{{ route('admin.students.export.excel') }}{{ request('search') ? '?search='.urlencode(request('search')) : '' }}"
                    class="btn-accent" style="background:#10b981;">
                     <i class="fa-solid fa-file-excel"></i> Export Excel
                 </a>
@@ -66,6 +66,7 @@
                     <tr>
                         <th>Reg No</th>
                         <th>Full Name</th>
+                        <th>Username</th>
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Date of Birth</th>
@@ -85,12 +86,19 @@
                                 <span style="font-weight:500;">{{ $student->Name }}</span>
                             </div>
                         </td>
+                        <td style="color:var(--text-secondary);font-size:0.85rem;">{{ $student->username }}</td>
                         <td style="color:var(--text-secondary);font-size:0.85rem;">{{ $student->email }}</td>
                         <td>{{ $student->phone }}</td>
                         <td>{{ \Carbon\Carbon::parse($student->date_of_birth)->format('d M Y') }}</td>
                         <td class="cell-truncate" title="{{ $student->address }}">{{ $student->address }}</td>
                         <td style="text-align:center;">
-                            <div class="d-flex justify-content-center gap-1">
+                                <button type="button"
+                                        class="btn-icon view"
+                                        title="View Details"
+                                        onclick="openViewModal({{ $student->id }})"
+                                        style="color: var(--info); background: rgba(14, 165, 233, 0.1);">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
                                 <button type="button"
                                         class="btn-icon edit"
                                         title="Edit Student"
@@ -98,6 +106,7 @@
                                         data-id="{{ $student->id }}"
                                         data-reg="{{ $student->reg_No }}"
                                         data-name="{{ $student->Name }}"
+                                        data-username="{{ $student->username }}"
                                         data-email="{{ $student->email }}"
                                         data-phone="{{ $student->phone }}"
                                         data-bod="{{ $student->date_of_birth }}"
@@ -105,7 +114,7 @@
                                         data-address="{{ $student->address }}">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <a href="{{ route('students.delete', $student->id) }}"
+                                <a href="{{ route('admin.students.delete', $student->id) }}"
                                    class="btn-icon del"
                                    title="Delete Student"
                                    onclick="return confirmDelete(this)">
@@ -116,7 +125,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7">
+                        <td colspan="8">
                             <div class="empty-state">
                                 <i class="fa-solid fa-user-graduate"></i>
                                 <p>No student records found. Add your first student!</p>
@@ -144,7 +153,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('students.store') }}" method="post" id="registerStudentForm">
+            <form action="{{ route('admin.students.store') }}" method="post" id="registerStudentForm">
                 @csrf
                 <div class="modal-body form-dark">
 
@@ -170,6 +179,13 @@
                                    class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
                                    value="{{ old('name') }}" placeholder="Enter full name" required>
                             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="text" name="username" id="register_username"
+                                   class="form-control {{ $errors->has('username') ? 'is-invalid' : '' }}"
+                                   value="{{ old('username') }}" placeholder="Enter unique username" required>
+                            @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Email Address <span class="text-danger">*</span></label>
@@ -199,6 +215,7 @@
                                    placeholder="Min. 6 characters" required>
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
+
                         <div class="col-12">
                             <label class="form-label">Address <span class="text-danger">*</span></label>
                             <input type="text" name="address" id="register_address"
@@ -234,7 +251,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('students.update') }}" method="post">
+            <form action="{{ route('admin.students.update') }}" method="post">
                 @csrf
                 <div class="modal-body form-dark">
                     <input type="hidden" name="id" id="update_id">
@@ -246,6 +263,10 @@
                         <div class="col-md-6">
                             <label class="form-label">Full Name <span class="text-danger">*</span></label>
                             <input type="text" name="name" id="update_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="text" name="username" id="update_username" class="form-control" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Email Address <span class="text-danger">*</span></label>
@@ -263,6 +284,7 @@
                             <label class="form-label">Password <span class="text-danger">*</span></label>
                             <input type="password" name="password" id="update_password" class="form-control" required>
                         </div>
+
                         <div class="col-12">
                             <label class="form-label">Address <span class="text-danger">*</span></label>
                             <input type="text" name="address" id="update_address" class="form-control" required>
@@ -295,7 +317,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('students.import') }}" method="post" enctype="multipart/form-data">
+            <form action="{{ route('admin.students.import') }}" method="post" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body form-dark">
                     <p style="font-size:0.875rem;color:var(--text-secondary);">
@@ -316,6 +338,109 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+{{-- ═══════════════════════════════════════════════
+     VIEW STUDENT PROFILE MODAL
+═══════════════════════════════════════════════════ --}}
+<div class="modal fade modal-dark" id="viewStudentModal" tabindex="-1" aria-labelledby="viewStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewStudentModalLabel">
+                    <i class="fa-solid fa-user-graduate me-2" style="color:var(--info);"></i>Student Profile
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body form-dark">
+                <div class="row g-4">
+                    {{-- Left Column: Personal Info --}}
+                    <div class="col-md-5">
+                        <div class="card-dark" style="border: 1px solid rgba(255,255,255,0.05); background: var(--bg-tertiary);">
+                            <div class="card-dark-header p-3" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <h6 class="mb-0" style="color: var(--text-primary);">Personal Details</h6>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-center mb-3">
+                                    <div class="avatar-circle mx-auto mb-2" id="view_avatar" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);width:80px;height:80px;font-size:2rem;">
+                                        S
+                                    </div>
+                                    <h5 class="mb-1" id="view_name" style="color: var(--text-primary);">Student Name</h5>
+                                    <span class="badge-dark badge-blue" id="view_reg_no">REG001</span>
+                                </div>
+                                <ul class="list-group list-group-flush form-dark" style="background: transparent; border-radius: 0;">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: rgba(255,255,255,0.05); color: var(--text-secondary); padding: 0.75rem 0;">
+                                        <span><i class="fa-solid fa-envelope me-2 w-15px"></i>Email</span>
+                                        <span id="view_email" style="color: var(--text-primary); text-align: right; word-break: break-all; max-width: 60%;"></span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: rgba(255,255,255,0.05); color: var(--text-secondary); padding: 0.75rem 0;">
+                                        <span><i class="fa-solid fa-phone me-2 w-15px"></i>Phone</span>
+                                        <span id="view_phone" style="color: var(--text-primary);"></span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: rgba(255,255,255,0.05); color: var(--text-secondary); padding: 0.75rem 0;">
+                                        <span><i class="fa-solid fa-cake-candles me-2 w-15px"></i>DOB</span>
+                                        <span id="view_bod" style="color: var(--text-primary);"></span>
+                                    </li>
+                                    <li class="list-group-item d-flex flex-column" style="background: transparent; border-color: rgba(255,255,255,0.05); color: var(--text-secondary); padding: 0.75rem 0;">
+                                        <span class="mb-1"><i class="fa-solid fa-location-dot me-2 w-15px"></i>Address</span>
+                                        <span id="view_address" style="color: var(--text-primary); padding-left: 25px; line-height: 1.4; font-size: 0.9rem;"></span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{-- Right Column: Academic Info & Stats --}}
+                    <div class="col-md-7">
+                        {{-- Stats Row --}}
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-sm-4">
+                                <div class="card-dark text-center p-3 h-100" style="border: 1px solid rgba(255,255,255,0.05); background: var(--bg-tertiary);">
+                                    <i class="fa-solid fa-pen-to-square mb-2" style="font-size: 1.5rem; color: var(--warning);"></i>
+                                    <h4 class="mb-0" id="view_total_attempts" style="color: var(--text-primary);">0</h4>
+                                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Attempts</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                <div class="card-dark text-center p-3 h-100" style="border: 1px solid rgba(255,255,255,0.05); background: var(--bg-tertiary);">
+                                    <i class="fa-solid fa-check-circle mb-2" style="font-size: 1.5rem; color: var(--success);"></i>
+                                    <h4 class="mb-0" id="view_completed_quizzes" style="color: var(--text-primary);">0</h4>
+                                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Completed</span>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <div class="card-dark text-center p-3 h-100" style="border: 1px solid rgba(255,255,255,0.05); background: var(--bg-tertiary);">
+                                    <i class="fa-solid fa-chart-line mb-2" style="font-size: 1.5rem; color: var(--info);"></i>
+                                    <h4 class="mb-0" id="view_avg_marks" style="color: var(--text-primary);">0%</h4>
+                                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Avg Marks</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Enrolled Subjects --}}
+                        <h6 style="color: var(--text-primary); margin-bottom: 0.75rem;"><i class="fa-solid fa-book me-2" style="color: var(--accent);"></i>Enrolled Subjects</h6>
+                        <div id="view_subjects" class="d-flex flex-wrap gap-2 mb-4">
+                            <!-- Subjects will be injected here -->
+                        </div>
+
+                        {{-- Latest Results --}}
+                        <h6 style="color: var(--text-primary); margin-bottom: 0.75rem;"><i class="fa-solid fa-clock-rotate-left me-2" style="color: var(--success);"></i>Latest Results</h6>
+                        <div id="view_latest_results" class="d-flex flex-column gap-2">
+                            <!-- Results will be injected here -->
+                            <div class="text-center p-3" style="color: var(--text-muted); font-size: 0.85rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px;">
+                                Loading results...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-accent" style="background:var(--bg-tertiary);color:var(--text-secondary);" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark me-1"></i> Close
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -381,26 +506,56 @@
     });
     @endif
 
-    // ── Load next Reg No on modal open ────────────────────────────────────
+    // ── Load next Reg No on Add Student modal open ──────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('registerStudentModal').addEventListener('show.bs.modal', function () {
-            fetch('{{ route("students.next-reg-no") }}')
+            fetch('{{ route("admin.students.next-reg-no") }}')
                 .then(r => r.json())
                 .then(d => { document.getElementById('register_reg_no_display').value = d.reg_no; })
                 .catch(() => { document.getElementById('register_reg_no_display').value = 'STU???'; });
         });
+        
+
     });
 
     // ── Live search ───────────────────────────────────────────────────────
+    // Replaced by DataTables, keeping for fallback if needed
+    // document.addEventListener('DOMContentLoaded', function () {
+    //     document.getElementById('searchInput').addEventListener('keyup', function (e) {
+    //         if (e.key === 'Enter') {
+    //             const val = e.target.value.trim();
+    //             if(val) {
+    //                 window.location.href = '{{ route("admin.students.index") }}?search=' + encodeURIComponent(val);
+    //             } else {
+    //                 window.location.href = '{{ route("admin.students.index") }}';
+    //             }
+    //         }
+    //     });
+    // });
+
+    // ── DataTables Initialization ─────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
-        let delay;
-        document.getElementById('searchInput').addEventListener('keyup', function () {
-            clearTimeout(delay);
-            const val = this.value;
-            delay = setTimeout(() => {
-                window.location.href = '{{ route("students.index") }}?search=' + encodeURIComponent(val);
-            }, 500);
+        const table = $('.table-dark-custom').DataTable({
+            "pageLength": 10,
+            "lengthMenu": [5, 10, 25, 50, 100],
+            "language": {
+                "search": "",
+                "searchPlaceholder": "Search students...",
+                "lengthMenu": "Show _MENU_ records",
+                "info": "Showing _START_ to _END_ of _TOTAL_ students",
+                "infoEmpty": "No records available"
+            },
+            "order": [], // disable initial sort
+            "columnDefs": [
+                { "orderable": false, "targets": -1 } // Disable sorting on Actions column
+            ],
+            "dom": "<'row mb-3'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                   "<'row'<'col-sm-12'tr>>" +
+                   "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
         });
+        
+        // Hide custom search wrapper since DataTable provides one
+        $('.card-dark-header').addClass('dt-active');
     });
 
     // ── Populate edit modal ───────────────────────────────────────────────
@@ -408,12 +563,87 @@
         document.getElementById('update_id').value       = btn.getAttribute('data-id');
         document.getElementById('update_reg_No').value   = btn.getAttribute('data-reg');
         document.getElementById('update_name').value     = btn.getAttribute('data-name');
+        document.getElementById('update_username').value = btn.getAttribute('data-username');
         document.getElementById('update_email').value    = btn.getAttribute('data-email');
         document.getElementById('update_phone').value    = btn.getAttribute('data-phone');
         document.getElementById('update_bod').value      = btn.getAttribute('data-bod');
         document.getElementById('update_password').value = btn.getAttribute('data-password');
         document.getElementById('update_address').value  = btn.getAttribute('data-address');
+        
+
+
         new bootstrap.Modal(document.getElementById('updateStudentModal')).show();
+    }
+
+    // ── Fetch and Populate view modal ──────────────────────────────────────
+    function openViewModal(studentId) {
+        // Show loading state or clear previous data if needed
+        document.getElementById('view_subjects').innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Loading subjects...</span>';
+        document.getElementById('view_latest_results').innerHTML = '<div class="text-center p-3" style="color: var(--text-muted); font-size: 0.85rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px;">Loading results...</div>';
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('viewStudentModal'));
+        modal.show();
+
+        // Fetch student details
+        fetch(`{{ url('admin/students') }}/${studentId}/details`)
+            .then(res => res.json())
+            .then(data => {
+                const s = data.student;
+                const stats = data.stats;
+                const results = data.latest_results;
+
+                // Populate Personal Details
+                document.getElementById('view_avatar').innerText = s.Name.charAt(0).toUpperCase();
+                document.getElementById('view_name').innerText = s.Name;
+                document.getElementById('view_reg_no').innerText = s.reg_No;
+                document.getElementById('view_email').innerText = s.email;
+                document.getElementById('view_phone').innerText = s.phone;
+                
+                // Format DOB
+                const dob = new Date(s.date_of_birth);
+                document.getElementById('view_bod').innerText = dob.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                
+                document.getElementById('view_address').innerText = s.address;
+
+                // Populate Stats
+                document.getElementById('view_total_attempts').innerText = stats.total_attempts;
+                document.getElementById('view_completed_quizzes').innerText = stats.completed_quizzes;
+                document.getElementById('view_avg_marks').innerText = stats.average_marks + '%';
+
+                // Populate Subjects
+                const subjectsContainer = document.getElementById('view_subjects');
+                if (s.subjects && s.subjects.length > 0) {
+                    subjectsContainer.innerHTML = s.subjects.map(sub => 
+                        `<span class="badge-dark badge-purple" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">${sub.subject_code} - ${sub.subject_name}</span>`
+                    ).join('');
+                } else {
+                    subjectsContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">No subjects assigned</span>';
+                }
+
+                // Populate Latest Results
+                const resultsContainer = document.getElementById('view_latest_results');
+                if (results && results.length > 0) {
+                    resultsContainer.innerHTML = results.map(r => `
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="color: var(--text-primary); font-weight: 500; font-size: 0.9rem;">${r.quiz_title}</div>
+                                <div style="color: var(--text-secondary); font-size: 0.75rem;">${r.subject} • ${r.date}</div>
+                            </div>
+                            <div style="font-weight: 600; color: ${r.percentage >= 50 ? 'var(--success)' : 'var(--danger)'}; font-size: 1.1rem;">
+                                ${r.percentage}%
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    resultsContainer.innerHTML = '<div class="text-center p-3" style="color: var(--text-muted); font-size: 0.85rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px;">No completed quizzes yet</div>';
+                }
+            })
+            .catch(err => {
+                console.error("Failed to fetch student details:", err);
+                document.getElementById('view_subjects').innerHTML = '<span style="color: var(--danger); font-size: 0.85rem;">Failed to load data.</span>';
+                document.getElementById('view_latest_results').innerHTML = '<div class="text-center p-3" style="color: var(--danger); font-size: 0.85rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px;">Failed to load results.</div>';
+            });
     }
 </script>
 @endpush

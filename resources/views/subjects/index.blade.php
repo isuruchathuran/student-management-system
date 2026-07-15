@@ -8,7 +8,7 @@
     {{-- ── Page Header ─────────────────────────────────────────────────── --}}
     <div class="page-header">
         <div class="breadcrumb-custom mb-1">
-            <a href="{{ route('dashboard') }}">Dashboard</a>
+            <a href="{{ route('admin.dashboard') }}">Dashboard</a>
             <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i>
             Subjects
         </div>
@@ -48,7 +48,7 @@
                     <tr>
                         <th>Subject Code</th>
                         <th>Subject Name</th>
-                        <th>Assigned Teacher</th>
+                        <th>Status</th>
                         <th>Credits</th>
                         <th>Semester</th>
                         <th style="text-align:center;">Actions</th>
@@ -61,14 +61,9 @@
                         <td style="font-weight:500;">{{ $subject->subject_name }}</td>
                         <td>
                             @if($subject->teacher)
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="avatar-circle" style="background:linear-gradient(135deg,#10b981,#3b82f6);width:28px;height:28px;font-size:0.7rem;flex-shrink:0;">
-                                        {{ strtoupper(substr($subject->teacher->Teacher_Name, 0, 1)) }}
-                                    </div>
-                                    <span style="font-size:0.875rem;">{{ $subject->teacher->Teacher_Name }}</span>
-                                </div>
+                                <span class="badge-dark badge-green" style="font-size:0.75rem;"><i class="fa-solid fa-circle-check me-1"></i> Instructor Assigned</span>
                             @else
-                                <span style="color:var(--text-muted);font-size:0.85rem;">— Unassigned</span>
+                                <span class="badge-dark badge-red" style="font-size:0.75rem;"><i class="fa-solid fa-circle-xmark me-1"></i> Instructor Not Assigned</span>
                             @endif
                         </td>
                         <td>
@@ -87,12 +82,11 @@
                                         data-id="{{ $subject->id }}"
                                         data-code="{{ $subject->subject_code }}"
                                         data-name="{{ $subject->subject_name }}"
-                                        data-teacher="{{ $subject->teacher_id }}"
                                         data-credits="{{ $subject->credits ?? $subject->credit_hours }}"
                                         data-semester="{{ $subject->semester }}">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <a href="{{ route('subjects.delete', $subject->id) }}"
+                                <a href="{{ route('admin.subjects.delete', $subject->id) }}"
                                    class="btn-icon del"
                                    title="Delete Subject"
                                    onclick="return confirmDelete(this)">
@@ -131,7 +125,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('subjects.store') }}" method="post" id="addSubjectForm">
+            <form action="{{ route('admin.subjects.store') }}" method="post" id="addSubjectForm">
                 @csrf
                 <div class="modal-body form-dark">
 
@@ -151,7 +145,7 @@
                             <label class="form-label">Subject Code <span class="text-danger">*</span></label>
                             <input type="text" name="subject_code" id="add_code"
                                    class="form-control {{ $errors->has('subject_code') ? 'is-invalid' : '' }}"
-                                   value="{{ old('subject_code') }}" placeholder="e.g. CS101" required>
+                                   value="{{ old('subject_code') }}" placeholder="Generating..." readonly required>
                             @error('subject_code')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
@@ -160,17 +154,6 @@
                                    class="form-control {{ $errors->has('subject_name') ? 'is-invalid' : '' }}"
                                    value="{{ old('subject_name') }}" placeholder="e.g. Introduction to Programming" required>
                             @error('subject_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Assigned Teacher</label>
-                            <select name="teacher_id" id="add_teacher" class="form-select">
-                                <option value="">— Select Teacher —</option>
-                                @foreach($teachers as $teacher)
-                                    <option value="{{ $teacher->id }}" {{ old('teacher_id') == $teacher->id ? 'selected' : '' }}>
-                                        {{ $teacher->Teacher_Name }} ({{ $teacher->subject }})
-                                    </option>
-                                @endforeach
-                            </select>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Credits <span class="text-danger">*</span></label>
@@ -218,7 +201,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('subjects.update') }}" method="post">
+            <form action="{{ route('admin.subjects.update') }}" method="post">
                 @csrf
                 <div class="modal-body form-dark">
                     <input type="hidden" name="id" id="edit_id">
@@ -230,17 +213,6 @@
                         <div class="col-md-6">
                             <label class="form-label">Subject Name <span class="text-danger">*</span></label>
                             <input type="text" name="subject_name" id="edit_name" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Assigned Teacher</label>
-                            <select name="teacher_id" id="edit_teacher" class="form-select">
-                                <option value="">— Select Teacher —</option>
-                                @foreach($teachers as $teacher)
-                                    <option value="{{ $teacher->id }}">
-                                        {{ $teacher->Teacher_Name }} ({{ $teacher->subject }})
-                                    </option>
-                                @endforeach
-                            </select>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Credits <span class="text-danger">*</span></label>
@@ -326,16 +298,50 @@
     });
     @endif
 
-    // Live search
+    // Live search - Replaced by DataTables
+    // document.addEventListener('DOMContentLoaded', function () {
+    //     document.getElementById('searchInput').addEventListener('keyup', function (e) {
+    //         if (e.key === 'Enter') {
+    //             const val = e.target.value.trim();
+    //             if(val) {
+    //                 window.location.href = '{{ route("admin.subjects.index") }}?search=' + encodeURIComponent(val);
+    //             } else {
+    //                 window.location.href = '{{ route("admin.subjects.index") }}';
+    //             }
+    //         }
+    //     });
+    // });
+
+    // DataTables Initialization
     document.addEventListener('DOMContentLoaded', function () {
-        let delay;
-        document.getElementById('searchInput').addEventListener('keyup', function () {
-            clearTimeout(delay);
-            const val = this.value;
-            delay = setTimeout(() => {
-                window.location.href = '{{ route("subjects.index") }}?search=' + encodeURIComponent(val);
-            }, 500);
+        // Load next Subject Code on modal open
+        document.getElementById('addSubjectModal').addEventListener('show.bs.modal', function () {
+            fetch('{{ route("admin.subjects.next-subject-code") }}')
+                .then(r => r.json())
+                .then(d => { document.getElementById('add_code').value = d.subject_code; })
+                .catch(() => { document.getElementById('add_code').value = 'SUB???'; });
         });
+
+        const table = $('.table-dark-custom').DataTable({
+            "pageLength": 10,
+            "lengthMenu": [5, 10, 25, 50, 100],
+            "language": {
+                "search": "",
+                "searchPlaceholder": "Search subjects...",
+                "lengthMenu": "Show _MENU_ records",
+                "info": "Showing _START_ to _END_ of _TOTAL_ subjects",
+                "infoEmpty": "No records available"
+            },
+            "order": [], // disable initial sort
+            "columnDefs": [
+                { "orderable": false, "targets": -1 } // Disable sorting on Actions column
+            ],
+            "dom": "<'row mb-3'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                   "<'row'<'col-sm-12'tr>>" +
+                   "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        });
+        
+        $('.card-dark-header').addClass('dt-active');
     });
 
     function openEditSubjectModal(btn) {
@@ -349,13 +355,6 @@
         const semester = btn.getAttribute('data-semester');
         for (let opt of semSel.options) {
             opt.selected = (opt.value === semester);
-        }
-
-        // Set teacher dropdown
-        const teacherSel = document.getElementById('edit_teacher');
-        const teacherId  = btn.getAttribute('data-teacher');
-        for (let opt of teacherSel.options) {
-            opt.selected = (opt.value === teacherId);
         }
 
         new bootstrap.Modal(document.getElementById('editSubjectModal')).show();

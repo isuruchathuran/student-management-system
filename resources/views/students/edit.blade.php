@@ -7,9 +7,9 @@
 
     <div class="page-header">
         <div class="breadcrumb-custom mb-1">
-            <a href="{{ route('dashboard') }}">Dashboard</a>
+            <a href="{{ route('admin.dashboard') }}">Dashboard</a>
             <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i>
-            <a href="{{ route('students.index') }}">Students</a>
+            <a href="{{ route('admin.students.index') }}">Students</a>
             <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i>
             Edit Student
         </div>
@@ -22,12 +22,12 @@
             <div class="card-dark">
                 <div class="card-dark-header">
                     <h5><i class="fa-solid fa-user me-2" style="color:var(--accent);"></i>Student Details</h5>
-                    <a href="{{ route('students.index') }}" class="btn-accent" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:7px 16px;font-size:0.8rem;">
+                    <a href="{{ route('admin.students.index') }}" class="btn-accent" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:7px 16px;font-size:0.8rem;">
                         <i class="fa-solid fa-arrow-left me-1"></i> Back
                     </a>
                 </div>
                 <div class="card-dark-body">
-                    <form action="{{ route('students.update') }}" method="post" class="form-dark">
+                    <form action="{{ route('admin.students.update') }}" method="post" class="form-dark">
                         @csrf
                         <input type="hidden" name="id" value="{{ $student->id }}">
 
@@ -75,6 +75,7 @@
                                        value="{{ $student->password }}" required>
                                 @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
+
                             <div class="col-12">
                                 <label class="form-label">Address <span class="text-danger">*</span></label>
                                 <input type="text" name="address" class="form-control {{ $errors->has('address') ? 'is-invalid' : '' }}"
@@ -85,7 +86,7 @@
                                 <button type="submit" class="btn-accent">
                                     <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
                                 </button>
-                                <a href="{{ route('students.index') }}" class="btn-accent" style="background:var(--bg-tertiary);color:var(--text-secondary);">
+                                <a href="{{ route('admin.students.index') }}" class="btn-accent" style="background:var(--bg-tertiary);color:var(--text-secondary);">
                                     <i class="fa-solid fa-xmark me-1"></i> Cancel
                                 </a>
                             </div>
@@ -98,3 +99,5 @@
 
 </div>
 @endsection
+
+
